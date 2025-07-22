@@ -7,8 +7,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('authmidd')->group(function () {
-    Route::post('/register', [AuthController::class, 'register'])->middleware('authmidd:admin');
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
     Route::put('/update-profile/{id}', [AuthController::class, 'updateProfile']);
     Route::get('/profile', [AuthController::class, 'profile']);
+    
 });
