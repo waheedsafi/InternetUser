@@ -2,7 +2,7 @@
 namespace App\Enum;
 
 
-enum DeputyMinistry : int{
+enum DeputyMinistry: int{
 
    case DeputyMinistry =1;
    case Administrative_and_Financial =2;
