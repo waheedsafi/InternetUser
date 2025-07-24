@@ -14,9 +14,7 @@ return new class extends Migration
         Schema::create('directorate_types', function (Blueprint $table) {
              $table->id();
              $table->string('name');
-              $table->unsignedBigInteger('directorate_type_id');
-              $table->foreign('directorate_type_id')->references('id')->on('directorate_types')
-              ->onDelete('no action')->onUpdate('cascade');
+              
              $table->timestamps();
         });
     }
