@@ -2,14 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Enum\DeputyMinistryEnum;
-use App\Enum\DirectorateTypeEnum;
-use App\Enum\RoleEnum;
-use App\Models\Directorate;
-use App\Models\DirectorateType;
 use App\Models\Role;
 use App\Models\User;
+use App\Enum\RoleEnum;
+use App\Models\Directorate;
+use App\Models\EmploymentType;
+use App\Models\DirectorateType;
 use Illuminate\Database\Seeder;
+use App\Enum\DeputyMinistryEnum;
+use App\Enum\DirectorateTypeEnum;
+use App\Enums\EmploymentTypeEnum;
+use Egulias\EmailValidator\EmailParser;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -19,7 +23,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-     
+        
+      
+
+        EmploymentType::create([
+            'id' => EmploymentTypeEnum::NTA->value,
+            'name'=> 'NTA'
+        ]);
+        EmploymentType::create([
+            'id'=> EmploymentTypeEnum::Permanent->value,
+            'name' => 'Permanent'
+        ]);
+        EmploymentType::create([
+            'id' => EmploymentTypeEnum::TempContract->value,
+            'name' => 'TempContract'
+        ]);
         $this->deputyMinistry();   
 
 

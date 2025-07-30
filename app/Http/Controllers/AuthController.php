@@ -81,7 +81,7 @@ class AuthController extends Controller
             'email' => $user->id === $request->user_id
                 ? 'required|email|unique:users,email,' . $user->id
                 : 'required|email|unique:users,email',
-            'password' => 'nullable|min:6|confirmed',
+            'password' => 'nullable|min:6',
         ]);
 
         if ($validator->fails()) {
