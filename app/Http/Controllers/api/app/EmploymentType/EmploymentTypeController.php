@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\app\EmploymentType;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EmploymentTypeController extends Controller
 {
@@ -12,7 +13,9 @@ class EmploymentTypeController extends Controller
      */
     public function index()
     {
-        //
+         $emp =  DB::table('employment_types')->select('id','name')->get();
+
+      return response()->json($emp);
     }
 
     /**
