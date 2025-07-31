@@ -16,9 +16,9 @@ class DirectorateTypeController extends Controller
     {
         //
       
-      $data =  DB::table('directorates')->select('id','name','directorate_type_id')->get();
+    //   $data =  DB::table('directorates')->select('id','name','directorate_type_id')->get();
 
-      return response()->json($data);
+    //   return response()->json($data);
     }
 
     /**
