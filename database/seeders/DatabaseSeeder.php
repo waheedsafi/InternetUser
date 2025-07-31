@@ -11,7 +11,7 @@ use App\Models\DirectorateType;
 use Illuminate\Database\Seeder;
 use App\Enum\DeputyMinistryEnum;
 use App\Enum\DirectorateTypeEnum;
-use App\Enums\EmploymentTypeEnum;
+use App\Enum\EmploymentTypeEnum;
 use Egulias\EmailValidator\EmailParser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
