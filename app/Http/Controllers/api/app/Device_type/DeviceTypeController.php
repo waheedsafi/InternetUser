@@ -3,17 +3,13 @@ namespace App\Http\Controllers\api\app\Device_type;
 
 use App\Enum\DeviceTypeEnum;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class DeviceTypeController extends Controller
 {
-    public function index(): JsonResponse
-    {
-        $deviceTypes = collect(DeviceTypeEnum::cases())->map(fn($case) => [
-            'id' => $case->value,
-            'name' => $case->name,
-        ]);
+   public function index(){
+    $device = DB::table('device_type')->select('id','name');
+    return response()->json($device);
 
-        return response()->json($deviceTypes);
-    }
+   }
 }

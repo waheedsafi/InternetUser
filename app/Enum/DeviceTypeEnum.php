@@ -3,7 +3,7 @@ namespace App\Enum;
 
 enum DeviceTypeEnum: int
 {
-    case MobileAndComputer = 1;
-    case Mobile = 2;
-    case Computer = 3;
+    case Mobile = 1;
+    case Computer = 2;
+    case Tablet = 3;
 }

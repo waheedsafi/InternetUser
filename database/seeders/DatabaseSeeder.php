@@ -13,6 +13,7 @@ use App\Enum\DeputyMinistryEnum;
 use App\Enum\DeviceTypeEnum;
 use App\Enum\DirectorateTypeEnum;
 use App\Enum\EmploymentTypeEnum;
+use App\Models\DeviceType;
 use Egulias\EmailValidator\EmailParser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -24,6 +25,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        
+          DeviceType::create([
+            'id' => DeviceTypeEnum::Mobile->value,
+            'name'=> 'Mobile'
+        ]);
+            DeviceType::create([
+            'id' => DeviceTypeEnum::Computer ->value,
+            'name'=> 'Computer '
+        ]);
+            DeviceType::create([
+            'id' => DeviceTypeEnum::Tablet->value,
+            'name'=> 'Tablet'
+        ]);
+
+
+
+
+
+
 
 
 

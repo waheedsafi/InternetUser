@@ -14,9 +14,12 @@ return new class extends Migration
         Schema::create('violations', function (Blueprint $table) {
             $table->id();
          $table->unsignedBigInteger('internet_user_id');
-           
-
-    $table->foreign('internet_user_id')
+                $table->unsignedBigInteger('violation_type_id');
+            $table->foreign('violation_type_id')
+                  ->references('id')->on('violations_types')
+                  ->onDelete('no action')
+                  ->onUpdate('cascade');
+            $table->foreign('internet_user_id')
           ->references('id')->on('internet_users')
           ->onDelete('no action')
           ->onUpdate('cascade');
