@@ -5,7 +5,7 @@ use App\Http\Controllers\api\app\EmploymentType\EmploymentTypeController;
 use App\Http\Controllers\api\app\InternetUser\InternetUserController;
 use App\Http\Controllers\Api\App\Person\PersonController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DeviceTypeController;
+use App\Http\Controllers\api\app\Device_type\DeviceTypeController;
 use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/internet',[InternetUserController::class, 'index']);
