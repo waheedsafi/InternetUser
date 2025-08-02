@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 class DeviceTypeController extends Controller
 {
    public function index(){
-    $device = DB::table('device_type')->select('id','name');
+    $device = DB::table('device_types')->select('id','name')->get();
     return response()->json($device);
 
    }
