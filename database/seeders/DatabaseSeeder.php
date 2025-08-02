@@ -10,6 +10,7 @@ use App\Models\EmploymentType;
 use App\Models\DirectorateType;
 use Illuminate\Database\Seeder;
 use App\Enum\DeputyMinistryEnum;
+use App\Enum\DeviceTypeEnum;
 use App\Enum\DirectorateTypeEnum;
 use App\Enum\EmploymentTypeEnum;
 use Egulias\EmailValidator\EmailParser;
@@ -23,8 +24,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        
-      
+
+
+
 
         EmploymentType::create([
             'id' => EmploymentTypeEnum::NTA->value,

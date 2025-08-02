@@ -19,7 +19,7 @@ return new class extends Migration
            $table->string('username')->unique();
            $table->integer('device_limit');
            $table->string('mac_address');
-           $table->string('device_type');
+           $table->tinyInteger('device_type');
            $table->boolean('status')->default(true);
            $table->timestamps();
         });
