@@ -103,7 +103,7 @@ class ViolationTypeController extends Controller
      */
     public function destroy(string $id)
     {
-       $violationType = ViolationsType::find($id);
+      $violationType = ViolationsType::find($id);
 
         if (!$violationType) {
             return response()->json([
@@ -116,5 +116,6 @@ class ViolationTypeController extends Controller
         return response()->json([
             'message' => 'Violation Type deleted successfully'
         ], 200);
+
     }
 }
