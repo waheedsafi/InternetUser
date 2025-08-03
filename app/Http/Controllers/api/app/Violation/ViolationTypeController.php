@@ -76,7 +76,26 @@ class ViolationTypeController extends Controller
      */
     public function update(Request $request, string $id)
     {
+       $validatedData = $request->validate([
+            'name' => 'required|string|unique:violations_types,name,' . $id,
+        ]);
+
        
+        $violationType = ViolationsType::find($id);
+
+        if (!$violationType) {
+            return response()->json([
+                'message' => 'Violation Type not found'
+            ], 404);
+        }
+
+        $violationType->name = $validatedData['name'];
+        $violationType->save();
+
+        return response()->json([
+            'message' => 'Violation Type updated successfully',
+            'data' => $violationType
+        ], 200);
     }
 
     /**
@@ -84,6 +103,18 @@ class ViolationTypeController extends Controller
      */
     public function destroy(string $id)
     {
-       
+       $violationType = ViolationsType::find($id);
+
+        if (!$violationType) {
+            return response()->json([
+                'message' => 'Violation Type not found'
+            ], 404);
+        }
+
+        $violationType->delete();
+
+        return response()->json([
+            'message' => 'Violation Type deleted successfully'
+        ], 200);
     }
 }
