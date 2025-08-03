@@ -15,16 +15,14 @@ class ViolationTypeController extends Controller
      */
     public function index()
     {
-        $violations = DB::table('violations')
-        ->join('violations_types', 'violations.violation_type_id', '=', 'violations_types.id')  
-        ->join('internet_users', 'violations.internet_user_id', '=', 'internet_users.id')  
-        ->select('violations.*', 'violations_types.name as violation_type_name', 'internet_users.name as user_name')
-        ->orderBy('violations.id', 'desc')  
-        ->paginate(10); 
+        $violationsTypes = DB::table('violations_types')
+        ->select('id', 'name', 'created_at', ) 
+        ->orderBy('id', 'asc')->get();
+       
 
     return response()->json([
-        'message' => 'Violations retrieved successfully',
-        'data' => $violations
+        'message' => 'Violation types retrieved successfully',
+        'data' => $violationsTypes
     ], 200);
     }
 
@@ -39,33 +37,21 @@ class ViolationTypeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request ,$id)
+    public function store(Request $request ,)
     {
         
-    $validatedData = $request->validate([
-        'internet_user_id' => 'required|exists:internet_users,id',  
-        'name' => 'nullable|string|unique:violations_types,name', 
-        'comment' => 'nullable|string',
+   $validatedData = $request->validate([
+        'name' => 'required|string|unique:violations_types,name',
     ]);
 
     
-    if (isset($validatedData['name'])) {
-        $violationType = ViolationsType::create([
-            'name' => $validatedData['name']
-        ]);
-        $violation_type_id = $violationType->id;  
-    }
-
-   
-    $violation = Violation::create([
-        'internet_user_id' => $validatedData['internet_user_id'],
-        'violation_type_id' => $violation_type_id,
-        'comment' => $validatedData['comment'] ?? null,
+    $violationType = ViolationsType::create([
+        'name' => $validatedData['name']
     ]);
 
     return response()->json([
-        'message' => 'Violation created successfully',
-        'data' => $violation
+        'message' => 'Violation Type created successfully',
+        'data' => $violationType
     ], 201);
     }
 
@@ -82,13 +68,7 @@ class ViolationTypeController extends Controller
      */
     public function edit(string $id)
     {
-         $violation = Violation::with('violationType', 'internetUser') 
-        ->findOrFail($id); 
-
-    return response()->json([
-        'message' => 'Violation details retrieved successfully',
-        'data' => $violation
-    ], 200);
+    
     }
 
     /**
@@ -96,37 +76,7 @@ class ViolationTypeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $validatedData = $request->validate([
-        'internet_user_id' => 'required|exists:internet_users,id', 
-        'name' => 'nullable|string|unique:violations_types,name',
-        'comment' => 'nullable|string',
-    ]);
-
-   
-    $violation = Violation::findOrFail($id);
-
-   
-    if (isset($validatedData['name'])) {
-        $violationType = ViolationsType::create([
-            'name' => $validatedData['name']
-        ]);
-        $violation_type_id = $violationType->id;
-    } else {
-        
-        $violation_type_id = $validatedData['violation_type_id'] ?? $violation->violation_type_id;
-    }
-
-   
-    $violation->update([
-        'internet_user_id' => $validatedData['internet_user_id'],
-        'violation_type_id' => $violation_type_id,
-        'comment' => $validatedData['comment'] ?? $violation->comment, 
-    ]);
-
-    return response()->json([
-        'message' => 'Violation updated successfully',
-        'data' => $violation
-    ], 200);
+       
     }
 
     /**
@@ -134,13 +84,6 @@ class ViolationTypeController extends Controller
      */
     public function destroy(string $id)
     {
-        $violation = Violation::findOrFail($id); 
-
-    
-    $violation->delete();
-
-    return response()->json([
-        'message' => 'Violation deleted successfully'
-    ], 200);
+       
     }
 }
