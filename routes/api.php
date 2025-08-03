@@ -17,8 +17,8 @@ Route::get('/device-types', [DeviceTypeController::class, 'index']);
 // Route for violation 
 Route::get('/violation',[ViolationTypeController::class,'index']);
 Route::post('/violation',[ViolationTypeController::class, 'store']);
-Route::delete('/violation',[ViolationTypeController::class,' destroy']);
-Route::put('/violation',[ViolationTypeController::class,'edit']);
+Route::delete('/violation/{id',[ViolationTypeController::class,' destroy']);
+Route::put('/violation/{id}',[ViolationTypeController::class,'edit']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::put('/update-profile/{id}', [AuthController::class, 'updateProfile']);
