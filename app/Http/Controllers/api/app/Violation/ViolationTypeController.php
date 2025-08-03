@@ -18,8 +18,9 @@ class ViolationTypeController extends Controller
         $violations = DB::table('violations')
         ->join('violations_types', 'violations.violation_type_id', '=', 'violations_types.id')  
         ->join('internet_users', 'violations.internet_user_id', '=', 'internet_users.id')  
-        ->select('violations.*', 'violations_types.name as violation_type_name', 'internet_users.name as user_name')  
-        ->paginate(10);  
+        ->select('violations.*', 'violations_types.name as violation_type_name', 'internet_users.name as user_name')
+        ->orderBy('violations.id', 'desc')  
+        ->paginate(10); 
 
     return response()->json([
         'message' => 'Violations retrieved successfully',
@@ -42,44 +43,30 @@ class ViolationTypeController extends Controller
     {
         
     $validatedData = $request->validate([
-        'internet_user_id' => 'required|exists:internet_users,id',
-        'violation_type_id' => 'nullable|exists:violations_types,id',
-        'name' => 'nullable|string|unique:violations_types,name',
+        'internet_user_id' => 'required|exists:internet_users,id',  
+        'name' => 'nullable|string|unique:violations_types,name', 
         'comment' => 'nullable|string',
     ]);
 
     
-    $violation = Violation::findOrFail($id);
-
-   
     if (isset($validatedData['name'])) {
         $violationType = ViolationsType::create([
             'name' => $validatedData['name']
         ]);
-        $violation_type_id = $violationType->id;
-    } else {
-       
-        $violation_type_id = $validatedData['violation_type_id'] ?? $violation->violation_type_id;
+        $violation_type_id = $violationType->id;  
     }
 
    
-    $violation->update([
+    $violation = Violation::create([
         'internet_user_id' => $validatedData['internet_user_id'],
         'violation_type_id' => $violation_type_id,
-        'comment' => $validatedData['comment'] ?? $violation->comment, 
+        'comment' => $validatedData['comment'] ?? null,
     ]);
 
-    
     return response()->json([
-        'message' => 'Violation updated successfully',
-        'data' => [
-            'id' => $violation->id,
-            'internet_user_id' => $violation->internet_user_id,
-            'violation_type_name' => $violation->violationType->name, 
-            'user_name' => $violation->internetUser->name, 
-            'comment' => $violation->comment
-        ]
-    ], 200);
+        'message' => 'Violation created successfully',
+        'data' => $violation
+    ], 201);
     }
 
     /**
@@ -109,28 +96,27 @@ class ViolationTypeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-          $validatedData = $request->validate([
-        'internet_user_id' => 'required|exists:internet_users,id',
-        'violation_type_id' => 'nullable|exists:violations_types,id',
+        $validatedData = $request->validate([
+        'internet_user_id' => 'required|exists:internet_users,id', 
         'name' => 'nullable|string|unique:violations_types,name',
         'comment' => 'nullable|string',
     ]);
 
- 
-    $violation = Violation::findOrFail($id); 
+   
+    $violation = Violation::findOrFail($id);
 
-    
+   
     if (isset($validatedData['name'])) {
-        
         $violationType = ViolationsType::create([
             'name' => $validatedData['name']
         ]);
         $violation_type_id = $violationType->id;
     } else {
+        
         $violation_type_id = $validatedData['violation_type_id'] ?? $violation->violation_type_id;
     }
 
-    
+   
     $violation->update([
         'internet_user_id' => $validatedData['internet_user_id'],
         'violation_type_id' => $violation_type_id,
