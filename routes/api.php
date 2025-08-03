@@ -15,6 +15,7 @@ Route::get('/employment-type',[EmploymentTypeController::class,'index']);
 Route::get('/directorate',[DirectorateController::class,'index']);
 Route::get('/device-types', [DeviceTypeController::class, 'index']);
 // Route for violation 
+///
 Route::get('/violation',[ViolationTypeController::class,'index']);
 Route::post('/violation',[ViolationTypeController::class, 'store']);
 Route::delete('/violation/{id}', [ViolationTypeController::class, 'destroy']);
