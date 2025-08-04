@@ -29,6 +29,7 @@ $data= DB::table('internet_users as intu')
         'per.phone',
         'dir.name as directorate',  
         'intu.status',
+        'per.position',
         DB::raw('COUNT(val.id) as count'),  
         'parent_dir.name as deputy'  
     )
@@ -41,7 +42,8 @@ $data= DB::table('internet_users as intu')
         'per.directorate_id',
         'intu.status',
         'dir.name',
-        'parent_dir.name'  
+        'parent_dir.name',
+        'per.position',  
     )
     ->get();
     
@@ -76,7 +78,7 @@ $data= DB::table('internet_users as intu')
             'directorate_id' => 'required|exists:directorates,id',
             'email' => 'required|unique:persons,email', 
             'employee_type_id' => 'required|exists:employment_types,id', 
-            'position' => 'required|exists:positions,id', 
+            'position' => 'required|exists:position,id', 
             'person_id' => 'required|exists:persons,id', 
             'device_limit' => 'required|exists:internet_users,device_limit',
             'mac_address' => 'nullable|exists:internet_users,mac_address', 

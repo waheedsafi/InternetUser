@@ -18,6 +18,23 @@ class EmploymentTypeController extends Controller
       return response()->json($emp);
     }
 
+    // funiction for report 
+    public function employmentTypeCounts()
+{
+    $counts = DB::table('internet_users')
+        ->join('employment_types', 'internet_users.employment_type_id', '=', 'employment_types.id')
+        ->select('employment_types.name', DB::raw('COUNT(internet_users.id) as count'))
+        ->groupBy('employment_types.name')
+        ->get();
+
+    
+    return response()->json([
+        'employment_type_report' => $counts,
+    ]);
+}
+
+
+
     /**
      * Show the form for creating a new resource.
      */
