@@ -14,8 +14,7 @@ Route::post('/internet',[InternetUserController::class,'store']);
 Route::get('/employment-type',[EmploymentTypeController::class,'index']);
 Route::get('/directorate',[DirectorateController::class,'index']);
 Route::get('/device-types', [DeviceTypeController::class, 'index']);
-// Route for violation 
-// Route for totel user
+Route::put('users/{id}/status', [InternetUserController::class, 'updateStatus']);
 Route::get('/total-users', [InternetUserController::class, 'getTotalUsers']);
 Route::get('/violation',[ViolationTypeController::class,'index']);
 Route::post('/violation',[ViolationTypeController::class, 'store']);

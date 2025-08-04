@@ -259,5 +259,24 @@ $data= DB::table('internet_users as intu')
         'total_users' => $totalUsers,
     ]);
 }
+
+
+
+public function updateStatus(Request $request, $id)
+{
+    $internetUser = InternetUser::find($id);
+    if (!$internetUser) {
+        return response()->json([
+            'message' => 'User not found.',
+        ], 404);
+    }
+    $internetUser->status = $internetUser->status == 1 ? 0 : 1;
+    $internetUser->save();
+    return response()->json([
+        'message' => 'User status updated successfully.',
+        'status' => $internetUser->status,
+    ]);
+}
+
     }
 
