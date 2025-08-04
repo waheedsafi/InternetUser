@@ -19,11 +19,14 @@ class InternetUserController extends Controller
 $data= DB::table('internet_users as intu')
     ->join('persons as per', 'per.id', '=', 'intu.person_id')
     ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
+     ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
     ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')  
     ->leftJoin('violations as val', 'val.internet_user_id', '=', 'intu.id')
     ->select(
         'intu.id',
+        'emp.name',
         'per.name',
+        'per.email',
         'per.lastname',
         'intu.username',
         'per.phone',
@@ -35,7 +38,9 @@ $data= DB::table('internet_users as intu')
     )
     ->groupBy(
         'intu.id',
+        'emp.name',
         'per.name',
+        'per.email',
         'per.lastname',
         'intu.username',
         'per.phone',
