@@ -15,6 +15,7 @@ class InternetUserController extends Controller
      */
     public function index()
     {
+        
 $data= DB::table('internet_users as intu')
     ->join('persons as per', 'per.id', '=', 'intu.person_id')
     ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
@@ -45,7 +46,8 @@ $data= DB::table('internet_users as intu')
     ->get();
     
 
-    return response()->json($data);
+ return response()->json($data);
+
     
     }
 
@@ -249,5 +251,13 @@ $data= DB::table('internet_users as intu')
             ], 500);
         }
     }
+    public function getTotalUsers()
+{
+    
+    $totalUsers = InternetUser::count();
+    return response()->json([
+        'total_users' => $totalUsers,
+    ]);
+}
     }
 
