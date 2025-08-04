@@ -78,19 +78,17 @@ $data= DB::table('internet_users as intu')
             'directorate_id' => 'required|exists:directorates,id',
             'email' => 'required|unique:persons,email', 
             'employee_type_id' => 'required|exists:employment_types,id', 
-            'position' => 'required|exists:position,id', 
-            'person_id' => 'required|exists:persons,id', 
-            'device_limit' => 'required|exists:internet_users,device_limit',
-            'mac_address' => 'nullable|exists:internet_users,mac_address', 
+            'mac_address' => 'nullable|unique:internet_users,mac_address', 
         ]);
 
         
+     
         $person = Person::create([
             'name' => $request->name,
             'lastname' => $request->lastname,
             'email' => $validated['email'],  
             'phone' => $validated['phone'],
-            'position' => $validated['position'],
+            'position' => $request->position,
             'directorate_id' => $validated['directorate_id'],
             'employment_type_id' => $validated['employee_type_id'], 
         ]);
@@ -102,7 +100,7 @@ $data= DB::table('internet_users as intu')
             'status' => $validated['status'],
             'phone' => $validated['phone'],
             'directorate_id' => $validated['directorate_id'],
-            'device_limit' => $validated['device_limit'],
+            'device_limit' => $request->device_limit,
             'mac_address' => $validated['mac_address'],
         ]);
 
