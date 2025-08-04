@@ -24,8 +24,9 @@ $data= DB::table('internet_users as intu')
     ->leftJoin('violations as val', 'val.internet_user_id', '=', 'intu.id')
     ->select(
         'intu.id',
-        'emp.name',
+        'emp.name as employment_type',
         'per.name',
+        'intu.device_limit',
         'per.email',
         'per.lastname',
         'intu.username',
@@ -39,6 +40,7 @@ $data= DB::table('internet_users as intu')
     ->groupBy(
         'intu.id',
         'emp.name',
+        'intu.device_limit',
         'per.name',
         'per.email',
         'per.lastname',
