@@ -20,10 +20,13 @@ $data= DB::table('internet_users as intu')
     ->join('persons as per', 'per.id', '=', 'intu.person_id')
     ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
      ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
+     ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
+     ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')  
     ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')  
     ->leftJoin('violations as val', 'val.internet_user_id', '=', 'intu.id')
     ->select(
         'intu.id',
+        'intu.mac_address',
         'emp.name as employment_type',
         'per.name',
         'intu.device_limit',
@@ -34,11 +37,13 @@ $data= DB::table('internet_users as intu')
         'dir.name as directorate',  
         'intu.status',
         'per.position',
-        DB::raw('COUNT(val.id) as count'),  
+         'dt.name as device_type',
+        DB::raw('COUNT(val.id) as violations_count'),  
         'parent_dir.name as deputy'  
     )
     ->groupBy(
         'intu.id',
+        'intu.mac_address',
         'emp.name',
         'intu.device_limit',
         'per.name',
@@ -50,7 +55,8 @@ $data= DB::table('internet_users as intu')
         'intu.status',
         'dir.name',
         'parent_dir.name',
-        'per.position',  
+        'per.position', 
+        'dt.name',
     )
     ->get();
     
