@@ -241,7 +241,7 @@ $data= DB::table('internet_users as intu')
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove thee specified resource from storage.
      */
     public function destroy(string $id)
     {
