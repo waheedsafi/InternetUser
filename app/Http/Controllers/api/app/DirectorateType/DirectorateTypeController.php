@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\api\app\DirectorateType;
 
-use App\Http\Controllers\Controller;
+use App\Models\Directorate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 
 class DirectorateTypeController extends Controller
 {
@@ -13,6 +15,10 @@ class DirectorateTypeController extends Controller
     public function index()
     {
         //
+      
+    //   $data =  DB::table('directorates')->select('id','name','directorate_type_id')->get();
+
+    //   return response()->json($data);
     }
 
     /**

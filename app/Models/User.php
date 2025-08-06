@@ -10,6 +10,11 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
      use HasFactory, Notifiable, HasApiTokens;
+     public function role()
+{
+    return $this->belongsTo(Role::class,'role_id');
+}
+
 
     protected $fillable = [
         'name',

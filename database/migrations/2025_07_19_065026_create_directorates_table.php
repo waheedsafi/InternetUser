@@ -18,7 +18,7 @@ return new class extends Migration
           $table->foreign('directorate_type_id')->references('id')->on('directorate_types')
           ->onDelete('no action')
           ->onUpdate('cascade');
-          $table->unsignedBigInteger('directorate_id');
+          $table->unsignedBigInteger('directorate_id')->nullable();
           $table->timestamps();
         });
     }

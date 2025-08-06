@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api\app\Directorate;
 use App\Http\Controllers\Controller;
 use App\Models\Directorate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DirectorateController extends Controller
 {
@@ -13,11 +14,13 @@ class DirectorateController extends Controller
      */
     public function index()
     {
-       $dir = Directorate::with([
-        'directorateType:id,name',
-        'parentDirectorate:id,name'
-       ])->select('id','name','directorate_type_id','directorate_id')->get();
-        return response()->json($dir,201);
+      $dire = DB::table('directorates')->select('id', 
+      'name',
+      'directorate_type_id'
+      ,'directorate_id')->get();
+
+      return response()->json($dire);
+
     }
 
     /**
@@ -33,18 +36,7 @@ class DirectorateController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name'=>'required|string|max:255',
-            'directorate_type_id'=>'required|exists:directorate_types,id',
-            'directorate_id'=>'nullable|exists:directorates,id',
-
-        ]);
-        $dir = Directorate::create([
-            'name'=>$request->name,
-            'directorate_type_id'=>$request->directorate_type_id,
-            'directorate_id'=>$request->directorate_id
-        ]);
-        return response()->json($dir,201);
+       
     }
 
     /**
