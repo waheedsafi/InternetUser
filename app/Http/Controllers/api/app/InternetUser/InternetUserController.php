@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Person;
+use App\Models\InternetUserDevice;
 
 class InternetUserController extends Controller
 {
@@ -116,7 +117,10 @@ $data= DB::table('internet_users as intu')
             'device_limit' => $request->device_limit,
             'mac_address' => $validated['mac_address'],
         ]);
-
+        InternetUserDevice::create([
+            'internet_user_id' => $internetUser->id,
+            'device_type_id' => $request->device_type_id,
+        ]);     
         
         DB::commit();
 
@@ -191,6 +195,7 @@ $data= DB::table('internet_users as intu')
                 'person_id' => 'required|exists:persons,id',
                 'device_limit' => 'required|exists:internet_users,device_limit',
                 'mac_address' => 'nullable|exists:internet_users,mac_address',
+                'device_type_id' => 'required|device_type,id',
             ]);
 
             
@@ -292,4 +297,3 @@ public function updateStatus(Request $request, $id)
 }
 
     }
-

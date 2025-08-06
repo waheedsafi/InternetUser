@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/internet',[InternetUserController::class, 'index']);
 Route::post('/internet',[InternetUserController::class,'store']); 
+Route::delete('/internet/{id}',[InternetUserController::class,'destroy']); 
 Route::get('/employment-type',[EmploymentTypeController::class,'index']);
 Route::get('/directorate',[DirectorateController::class,'index']);
 Route::get('/device-types', [DeviceTypeController::class, 'index']);
