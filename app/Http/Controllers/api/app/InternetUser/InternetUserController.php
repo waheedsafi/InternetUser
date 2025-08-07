@@ -183,7 +183,7 @@ $data= DB::table('internet_users as intu')
         DB::beginTransaction();
 
     try {
-        // اعتبارسنجی ورودی‌ها
+       
         $validated = $request->validate([
             'username' => 'required|string|unique:internet_users,username,' . $id,  
             'status' => 'required|in:0,1',
