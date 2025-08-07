@@ -4,11 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+
+    public function index(){
+       $data = DB::table('users as us')
+              ->join('roles as ro', 'us.role_id', '=', 'ro.id')  
+              ->select('us.id', 'us.name', 'us.email', 'ro.name as role_name') 
+              ->get();
+               return response()->json($data);
+    }
+
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
