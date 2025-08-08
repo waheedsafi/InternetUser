@@ -11,12 +11,13 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller
 {
 
-    public function index(){
-       $data = DB::table('users as us')
-              ->join('roles as ro', 'us.role_id', '=', 'ro.id')  
-              ->select('us.id', 'us.name', 'us.email', 'ro.name as role_name') 
-              ->get();
-               return response()->json($data);
+    public function index()
+    {
+        $data = DB::table('users as us')
+            ->join('roles as ro', 'us.role_id', '=', 'ro.id')
+            ->select('us.id', 'us.name', 'us.email', 'ro.name as role_name')
+            ->get();
+        return response()->json($data);
     }
 
     public function login(Request $request)
@@ -44,7 +45,7 @@ class AuthController extends Controller
 
         $token = $user->createToken('YourAppName')->plainTextToken;
 
-        
+
         $user->load('role');
 
         return response()->json([
@@ -64,7 +65,7 @@ class AuthController extends Controller
     {
         $user = auth()->user();
 
-        
+
         $user->load('role');
 
         return response()->json([
@@ -83,72 +84,13 @@ class AuthController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $user = auth()->user();  
-
-   
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users,email,' . $user->id, 
-        'password' => 'nullable|min:6',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'errors' => $validator->errors(),
-        ], 400);
-    }
-
-    
-    if ($user->role?->name !== 'Admin' && $user->id !== $request->user_id) {
-        return response()->json([
-            'success' => false,
-            'error' => 'Unauthorized',
-        ], 403);
-    }
-
-    
-    $user->name = $request->name;
-    $user->email = $request->email;
-
-    if ($request->filled('password')) {
-        $user->password = Hash::make($request->password); 
-    }
-
-    $user->save();
-
-    
-    $user->load('role');
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Profile updated successfully',
-        'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role ? [
-                'id' => $user->role->id,
-                'name' => $user->role->name,
-            ] : null,
-        ],
-    ]);
-    }
-
-    public function register(Request $request)
-    {
         $user = auth()->user();
-        if (!$user || $user->role?->name !== 'Admin') {
-            return response()->json([
-                'success' => false,
-                'error' => 'Unauthorized',
-            ], 403);
-        }
+
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|min:6',
         ]);
 
         if ($validator->fails()) {
@@ -158,32 +100,43 @@ class AuthController extends Controller
             ], 400);
         }
 
-        $newUser = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role_id' => 2, 
-        ]);
 
-        $token = $newUser->createToken('YourAppName')->plainTextToken;
+        if ($user->role?->name !== 'Admin' && $user->id !== $request->user_id) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unauthorized',
+            ], 403);
+        }
 
-        $newUser->load('role');
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+
+        $user->load('role');
 
         return response()->json([
             'success' => true,
-            'token' => $token,
+            'message' => 'Profile updated successfully',
             'user' => [
-                'id' => $newUser->id,
-                'name' => $newUser->name,
-                'email' => $newUser->email,
-                'role' => $newUser->role ? [
-                    'id' => $newUser->role->id,
-                    'name' => $newUser->role->name,
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role ? [
+                    'id' => $user->role->id,
+                    'name' => $user->role->name,
                 ] : null,
             ],
-            'message' => 'User created successfully',
         ]);
     }
+
+
 
     public function logout(Request $request)
     {
