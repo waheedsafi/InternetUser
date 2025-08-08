@@ -182,62 +182,62 @@ $data= DB::table('internet_users as intu')
     {
         DB::beginTransaction();
 
-        try {
-           
-            $validated = $request->validate([
-                'username' => 'required|string|unique:internet_users,username,' . $id,  
-                'status' => 'required|in:0,1',
-                'phone' => 'required|string|max:15|unique:persons,phone,' . $id,  
-                'directorate_id' => 'required|exists:directorates,id',
-                'email' => 'required|unique:persons,email,' . $id, 
-                'employee_type_id' => 'required|exists:employment_types,id',
-                'position' => 'required|exists:positions,id',
-                'person_id' => 'required|exists:persons,id',
-                'device_limit' => 'required|exists:internet_users,device_limit',
-                'mac_address' => 'nullable|exists:internet_users,mac_address',
-                'device_type_id' => 'required|device_type,id',
-            ]);
+    try {
+       
+        $validated = $request->validate([
+            'username' => 'required|string|unique:internet_users,username,' . $id,  
+            'status' => 'required|in:0,1',
+            'phone' => 'required|string|max:15|unique:persons,phone,' . $id,  
+            'directorate_id' => 'required|exists:directorates,id',
+            'email' => 'required|unique:persons,email,' . $id, 
+            'employee_type_id' => 'required|exists:employment_types,id',
+            'position' => 'required|exists:positions,id',
+            'person_id' => 'required|exists:persons,id',
+            'device_limit' => 'required|exists:internet_users,device_limit',
+            'mac_address' => 'nullable|exists:internet_users,mac_address',
+            'device_type_id' => 'required|exists:device_types,id',  
+        ]);
 
-            
-            $internetUser = InternetUser::findOrFail($id);
-            $person = $internetUser->person;  
+        
+        $internetUser = InternetUser::findOrFail($id);
+        $person = $internetUser->person;  
 
-         
-            $person->update([
-                'name' => $request->name,
-                'lastname' => $request->lastname,
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-                'position' => $validated['position'],
-                'directorate_id' => $validated['directorate_id'],
-                'employment_type_id' => $validated['employee_type_id'],
-            ]);
+      
+        $person->update([
+            'name' => $request->name,
+            'lastname' => $request->lastname,
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'position' => $validated['position'],
+            'directorate_id' => $validated['directorate_id'],
+            'employment_type_id' => $validated['employee_type_id'],
+        ]);
 
-            
-            $internetUser->update([
-                'username' => $validated['username'],
-                'status' => $validated['status'],
-                'phone' => $validated['phone'],
-                'directorate_id' => $validated['directorate_id'],
-                'device_limit' => $validated['device_limit'],
-                'mac_address' => $validated['mac_address'],
-            ]);
+       
+        $internetUser->update([
+            'username' => $validated['username'],
+            'status' => $validated['status'],
+            'phone' => $validated['phone'],
+            'directorate_id' => $validated['directorate_id'],
+            'device_limit' => $validated['device_limit'],
+            'mac_address' => $validated['mac_address'],
+        ]);
 
-            DB::commit();
+        DB::commit();
 
-            return response()->json([
-                'message' => 'Internet user successfully updated.',
-                'data' => $internetUser,
-            ], 200);
+        return response()->json([
+            'message' => 'Internet user successfully updated.',
+            'data' => $internetUser,
+        ], 200);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+    } catch (\Exception $e) {
+        DB::rollBack();
 
-            return response()->json([
-                'message' => 'An error occurred while updating the user.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'An error occurred while updating the user.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
     }
 
     /**
