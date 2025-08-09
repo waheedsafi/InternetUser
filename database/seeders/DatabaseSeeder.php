@@ -67,6 +67,10 @@ class DatabaseSeeder extends Seeder
             'id' => RoleEnum::Admin->value,
             'name' => 'Admin',
         ]);
+         Role::create([
+            'id' => RoleEnum::User->value,
+            'name' => 'User',
+        ]);
         $adminExists = User::where('role_id', RoleEnum::Admin->value)->exists();
 
         if (!$adminExists) {

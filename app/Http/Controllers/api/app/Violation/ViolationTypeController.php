@@ -104,7 +104,6 @@ class ViolationTypeController extends Controller
     public function destroy(string $id)
     {
       $violationType = ViolationsType::find($id);
-
         if (!$violationType) {
             return response()->json([
                 'message' => 'Violation Type not found'
