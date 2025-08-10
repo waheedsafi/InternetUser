@@ -9,8 +9,11 @@ use App\Http\Controllers\api\app\Device_type\DeviceTypeController;
 use App\Http\Controllers\api\app\Violation\ViolationTypeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\app\Violation\ViolationController;
+use App\Http\Controllers\Api\Group\GroupController;
+
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/internet',[InternetUserController::class, 'index']);
+Route::get('/groups',[GroupController::class,'index']);
 Route::get('/user',[AuthController::class,'index']);
 Route::put('/user/{id}', [AuthController::class, 'systemUsersUpdate']);
 Route::delete('/user/{id}', [AuthController::class, 'systemUsersDelete']);

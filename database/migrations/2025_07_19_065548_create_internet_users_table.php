@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('internet_users', function (Blueprint $table) {
             $table->id();
          $table->unsignedBigInteger('person_id');
+          $table->unsignedBigInteger('group_id');
+         $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
         $table->foreign('person_id')->references('id')->on('persons')
           ->onDelete('no action')->onUpdate('cascade');
            $table->string('username')->unique();

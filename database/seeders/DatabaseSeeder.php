@@ -13,7 +13,9 @@ use App\Enum\DeputyMinistryEnum;
 use App\Enum\DeviceTypeEnum;
 use App\Enum\DirectorateTypeEnum;
 use App\Enum\EmploymentTypeEnum;
+use App\Enum\GroupEnum;
 use App\Models\DeviceType;
+use App\Models\Group;
 use Egulias\EmailValidator\EmailParser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -38,6 +40,21 @@ class DatabaseSeeder extends Seeder
             'id' => DeviceTypeEnum::Tablet->value,
             'name'=> 'Tablet'
         ]);
+
+         Group::create([
+            'id' => GroupEnum::OpenGroup->value,
+            'name'=> 'OpenGroup'
+        ]);
+        Group::create([
+            'id' => GroupEnum::Clientless->value,
+            'name'=> 'Clientless'
+        ]);
+        Group::create([
+            'id' => GroupEnum::Employee->value,
+            'name'=> 'Employee'
+        ]);
+
+
 
 
 

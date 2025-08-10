@@ -45,7 +45,7 @@ class ViolationController extends Controller
             
             $violationCount = Violation::where('internet_user_id', $request->internet_user_id)->count();
 
-            if ($violationCount >= 2) {
+            if ($violationCount >=2) {
                 $internetUser = InternetUser::find($request->internet_user_id);
                 if ($internetUser) {
                     $internetUser->status = false;

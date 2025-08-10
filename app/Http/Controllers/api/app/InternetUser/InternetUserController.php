@@ -6,6 +6,7 @@ use App\Models\InternetUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Group;
 use App\Models\Person;
 use App\Models\InternetUserDevice;
 
@@ -22,7 +23,8 @@ $data= DB::table('internet_users as intu')
     ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
      ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
      ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
-     ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')  
+     ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id') 
+     ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
     ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')  
    ->leftJoin('violations as val', function ($join) {
     $join->on('val.internet_user_id', '=', 'intu.id')
@@ -50,6 +52,7 @@ $data= DB::table('internet_users as intu')
         'intu.status',
         'per.position',
          'dt.name as device_type',
+         'gr.name as groups',
          'val.comment',
          'valt.name as violation_type',
         DB::raw('COUNT(val.id) as violations_count'),  
@@ -72,6 +75,7 @@ $data= DB::table('internet_users as intu')
         'per.position', 
         'dt.name',
         'val.comment',
+        'gr.name',
          'valt.name',
 
     )
@@ -109,6 +113,7 @@ $data= DB::table('internet_users as intu')
             'email' => 'required|unique:persons,email', 
             'employee_type_id' => 'required|exists:employment_types,id', 
             'mac_address' => 'nullable|unique:internet_users,mac_address', 
+             'name' => 'required|string|max:255',
         ]);
 
         
@@ -135,7 +140,10 @@ $data= DB::table('internet_users as intu')
         InternetUserDevice::create([
             'internet_user_id' => $internetUser->id,
             'device_type_id' => $request->device_type_id,
-        ]);     
+        ]);  
+        Group::create([
+            'name' => $validated['name'],
+        ]);
    
 
         
