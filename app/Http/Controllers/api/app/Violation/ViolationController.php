@@ -7,6 +7,7 @@ use App\Models\InternetUser;
 use App\Models\Violation;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreViolationRequest;  // Using custom request for validation
+use Illuminate\Support\Facades\DB;
 
 class ViolationController extends Controller
 {
@@ -25,43 +26,58 @@ class ViolationController extends Controller
         ], 200);
     }
 
-    /**
-     * Store a newly created violation in storage.
-     *
-     * @param  \App\Http\Requests\StoreViolationRequest  $request
-     * @return \Illuminate\Http\Response
-     */
+   
     public function store(Request $request)
-    {
-        try {
-            
+{
+    $validated = $request->validate([
+        'internet_user_id' => 'required|exists:internet_users,id',
+        'violation_type_id' => 'required|exists:violations_types,id',
+        'comment' => 'nullable|string',
+    ]);
 
-            $violation = Violation::create([
-                'internet_user_id' => $request->internet_user_id,
-                'violation_type_id' => $request->violation_type_id,
-                'comment' => $request->comment ?? '',
-            ]);
+   
+    $violationCount = Violation::where('internet_user_id', $validated['internet_user_id'])->count();
 
-            
-            $violationCount = Violation::where('internet_user_id', $request->internet_user_id)->count();
-
-            if ($violationCount >=2) {
-                $internetUser = InternetUser::find($request->internet_user_id);
-                if ($internetUser) {
-                    $internetUser->status = false;
-                    $internetUser->save();
-                }
-            }
-
-            return response()->json([
-                'message' => 'Violation created successfully!',
-                'data' => $violation,
-            ], 201);
-        } catch (\Exception $e) {
-            
-            return response()->json([
-                'message' => 'An error occurred: ' . $e->getMessage()
-            ], 500);
-        }
+    if ($violationCount >= 2) {
+        return response()->json([
+            'message' => 'This user has already violated twice and cannot have a new violation.',
+        ], 403);
     }
+
+    
+    DB::beginTransaction();
+
+    try {
+        
+        $violation = Violation::create([
+            'internet_user_id' => $validated['internet_user_id'],
+            'violation_type_id' => $validated['violation_type_id'],
+            'comment' => $validated['comment'] ?? '',
+        ]);
+
+       
+        if ($violationCount + 1 >= 2) {
+            $internetUser = InternetUser::find($validated['internet_user_id']);
+
+            if ($internetUser) {
+                $internetUser->status = false;
+                $internetUser->save();
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Violation successfully recorded.',
+            'data' => $violation,
+        ], 201);
+
+    } catch (\Exception $e) {
+        DB::rollBack(); 
+
+        return response()->json([
+            'message' => 'Server error: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

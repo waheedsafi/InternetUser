@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class InternetUser extends Model
 {
      protected $fillable = [
-        'person_id', 'username', 'device_limit', 'mac_address', 'status'
+        'person_id', 'username', 'device_limit', 'mac_address', 'status','group_id'
     ];
     protected $casts = [
     'device_type' => DeviceTypeEnum::class,

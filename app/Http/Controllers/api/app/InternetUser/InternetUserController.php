@@ -15,77 +15,81 @@ class InternetUserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        
-$data= DB::table('internet_users as intu')
-    ->join('persons as per', 'per.id', '=', 'intu.person_id')
-    ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
-     ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
-     ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
-     ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id') 
-     ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
-    ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')  
-   ->leftJoin('violations as val', function ($join) {
-    $join->on('val.internet_user_id', '=', 'intu.id')
-         ->whereRaw('val.id = (
-             SELECT MAX(v2.id) 
-             FROM violations v2 
-             WHERE v2.internet_user_id = intu.id
-         )');
-   })
-      ->leftJoin('violations_types as valt', function ($join) {
-    $join->on('val.violation_type_id', '=', 'valt.id');
-       
-   })
-    ->select(
-        'intu.id',
-        'intu.mac_address',
-        'emp.name as employment_type',
-        'per.name',
-        'intu.device_limit',
-        'per.email',
-        'per.lastname',
-        'intu.username',
-        'per.phone',
-        'dir.name as directorate',  
-        'intu.status',
-        'per.position',
-         'dt.name as device_type',
-         'gr.name as groups',
-         'val.comment',
-         'valt.name as violation_type',
-        DB::raw('COUNT(val.id) as violations_count'),  
-        'parent_dir.name as deputy'  
-    )
-    ->groupBy(
-        'intu.id',
-        'intu.mac_address',
-        'emp.name',
-        'intu.device_limit',
-        'per.name',
-        'per.email',
-        'per.lastname',
-        'intu.username',
-        'per.phone',
-        'per.directorate_id',
-        'intu.status',
-        'dir.name',
-        'parent_dir.name',
-        'per.position', 
-        'dt.name',
-        'val.comment',
-        'gr.name',
-         'valt.name',
+  
 
-    )
-    ->get();
-    
+public function index()
+{
+    // یک subquery برای شمارش تخلفات
+    $violationCounts = DB::table('violations')
+        ->select('internet_user_id', DB::raw('COUNT(*) as total_violations'))
+        ->groupBy('internet_user_id');
 
- return response()->json($data);
+    $data = DB::table('internet_users as intu')
+        ->join('persons as per', 'per.id', '=', 'intu.person_id')
+        ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
+        ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
+        ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
+        ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')
+        ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
+        ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
+        ->leftJoin('violations as val', function ($join) {
+            $join->on('val.internet_user_id', '=', 'intu.id')
+                 ->whereRaw('val.id = (
+                     SELECT MAX(v2.id) 
+                     FROM violations v2 
+                     WHERE v2.internet_user_id = intu.id
+                 )');
+        })
+        ->leftJoin('violations_types as valt', 'val.violation_type_id', '=', 'valt.id')
+        ->leftJoinSub($violationCounts, 'vc', function($join) {
+            $join->on('vc.internet_user_id', '=', 'intu.id');
+        })
+        ->select(
+            'intu.id',
+            'intu.mac_address',
+            'emp.name as employment_type',
+            'per.name',
+            'intu.device_limit',
+            'per.email',
+            'per.lastname',
+            'intu.username',
+            'per.phone',
+            'dir.name as directorate',
+            'intu.status',
+            'per.position',
+            'dt.name as device_type',
+            'gr.name as groups',
+            'val.comment',
+            'valt.name as violation_type',
+            DB::raw('COALESCE(vc.total_violations, 0) as violations_count'),
+            'parent_dir.name as deputy'
+        )
+        ->groupBy(
+            'intu.id',
+            'intu.mac_address',
+            'emp.name',
+            'intu.device_limit',
+            'per.name',
+            'per.email',
+            'per.lastname',
+            'intu.username',
+            'per.phone',
+            'per.directorate_id',
+            'intu.status',
+            'dir.name',
+            'parent_dir.name',
+            'per.position',
+            'dt.name',
+            'val.comment',
+            'valt.name',
+            'gr.name',
+            'vc.total_violations'
+        )
+        ->get();
 
-    
-    }
+    return response()->json($data);
+}
+
 
     /**
      * Show the form for creating a new resource.
@@ -113,6 +117,7 @@ $data= DB::table('internet_users as intu')
             'email' => 'required|unique:persons,email', 
             'employee_type_id' => 'required|exists:employment_types,id', 
             'mac_address' => 'nullable|unique:internet_users,mac_address', 
+            'group_id'=>'required|exists:groups,id',
              
         ]);
 
@@ -131,7 +136,7 @@ $data= DB::table('internet_users as intu')
         
         $internetUser = InternetUser::create([
             'person_id' => $person->id,
-            'group_id' => $request->group_id,
+            'group_id' => $validated['group_id'],
             'username' => $validated['username'],
             'status' => $validated['status'],
             'phone' => $validated['phone'],
