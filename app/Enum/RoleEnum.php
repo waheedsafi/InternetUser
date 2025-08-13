@@ -7,5 +7,6 @@ enum RoleEnum: int{
 
    case Admin =1;
    case User =2;
+   case viewer =3;
    
 }
