@@ -56,47 +56,7 @@ class DatabaseSeeder extends Seeder
 
         // User Permissions
 
-        permission::create([
-            'id'=>PermissionEnum::ViewUsers->value,
-            'name'=>'ViewUsers'
-        ]);
-        Permission::create([
-            'id'=>PermissionEnum::CreateUsers->value,
-            'name'=>'CreateUsers'
-        ]);
-
-        Permission::create([
-            'id'=>PermissionEnum::UpdateUsers->value,
-            'name'=>'UpdateUsers'
-        ]);
-
-        Permission::create([
-           'id'=>PermissionEnum::DeleteUsers->value,
-           'name'=>'DeleteUsers'
-        ]);
-
-        Permission::create([
-          'id'=>PermissionEnum::ViewSystemData->value,
-          'name'=>'ViewSystemData'
-        ]);
-
-        Permission::create([
-           'id'=>PermissionEnum::AddSystemData->value,
-           'name'=>'AddSystemData'
-        ]);
-
-        Permission::create([
-           'id'=>PermissionEnum::UpdateSystemData->value,
-           'name'=>'UpdateSystemData'
-        ]);
-
-        Permission::create([
-           'id'=>PermissionEnum::DeleteSystemData->value,
-           'name'=>'DeleteSystemData'
-        ]);
-
-
-
+    
 
         EmploymentType::create([
             'id' => EmploymentTypeEnum::NTA->value,
@@ -139,6 +99,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
         $this->call(DirectorateSeeder::class);
+        $this->call(PermissionSeeder::class);
     }
 
 
