@@ -60,73 +60,93 @@ class AuthController extends Controller
         ]);
     }
 
-    public function profile()
-    {
-        $user = auth()->user();
-        $user->load('role');
+   public function profile(Request $request)
+{
+    $user = auth()->user();
 
+    // بررسی اینکه آیا کاربر در حال تلاش برای مشاهده پروفایل خودش است یا نه
+    if ($request->route('id') != $user->id) {
         return response()->json([
-            'success' => true,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role ? [
-                    'id' => $user->role->id,
-                    'name' => $user->role->name,
-                ] : null,
-            ],
-        ]);
+            'success' => false,
+            'message' => 'You can only view your own profile.',
+        ], 403);
     }
 
-    public function updateProfile(Request $request)
-    {
-        $user = auth()->user();
+    $user->load('role');
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|min:6',
-        ]);
+    return response()->json([
+        'success' => true,
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role ? [
+                'id' => $user->role->id,
+                'name' => $user->role->name,
+            ] : null,
+        ],
+    ]);
+}
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 400);
-        }
+  public function updateProfile(Request $request)
+{
+    $user = auth()->user();
 
-        $user->name = $request->name;
-        $user->email = $request->email;
-
-        if ($request->filled('password')) {
-            $user->password = Hash::make($request->password);
-        }
-
-        $user->save();
-        $user->load('role');
-
+    // بررسی اینکه آیا کاربر در حال تلاش برای به‌روزرسانی پروفایل خودش است یا نه
+    if ($request->route('id') != $user->id) {
         return response()->json([
-            'success' => true,
-            'message' => 'Profile updated successfully',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role ? [
-                    'id' => $user->role->id,
-                    'name' => $user->role->name,
-                ] : null,
-            ],
-        ]);
+            'success' => false,
+            'message' => 'You can only update your own profile.',
+        ], 403);
     }
+
+    // ادامه کدهای موجود برای به‌روزرسانی پروفایل
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email,' . $user->id,
+        'password' => 'nullable|min:6',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors(),
+        ], 400);
+    }
+
+    $user->name = $request->name;
+    $user->email = $request->email;
+
+    if ($request->filled('password')) {
+        $user->password = Hash::make($request->password);
+    }
+
+    $user->save();
+    $user->load('role');
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Profile updated successfully',
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role ? [
+                'id' => $user->role->id,
+                'name' => $user->role->name,
+            ] : null,
+        ],
+    ]);
+}
 
     public function register(Request $request)
     {
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
+            'role_id' => 'required|in:1,2,3',
         ]);
 
         if ($validator->fails()) {
@@ -136,7 +156,10 @@ class AuthController extends Controller
             ], 400);
         }
 
-        $roleId = $request->input('role_id', 2);  // Default role is user
+
+        $roleId = $request->input('role_id');
+
+
         $newUser = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -144,8 +167,10 @@ class AuthController extends Controller
             'role_id' => $roleId,
         ]);
 
+
         $token = $newUser->createToken('YourAppName')->plainTextToken;
         $newUser->load('role');
+
 
         return response()->json([
             'success' => true,
@@ -162,6 +187,8 @@ class AuthController extends Controller
             'message' => 'User created successfully',
         ]);
     }
+
+
 
     public function logout(Request $request)
     {

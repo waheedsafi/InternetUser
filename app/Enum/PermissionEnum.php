@@ -2,18 +2,18 @@
 
 namespace App\Enum;
 
-enum PermissionEnum: string
+enum PermissionEnum: int
 {
     // User Permissions
-    case ViewUsers = 'view-users';
-    case CreateUsers = 'create-users';
-    case UpdateUsers = 'update-users';
-    case DeleteUsers = 'delete-users';
+    case ViewUsers = 1;
+    case CreateUsers = 2;
+    case UpdateUsers = 3;
+    case DeleteUsers = 4;
 
     // Systems Permission
-    case ViewSystemData = 'view-system-data';
-    case AddSystemData = 'add-system-data';
-    case UpdateSystemData = 'update-system-data';
-    case DeleteSystemData = 'delete-system-data';
+    case ViewSystemData = 5;
+    case AddSystemData = 6;
+    case UpdateSystemData = 7;
+    case DeleteSystemData = 8;
 
 }

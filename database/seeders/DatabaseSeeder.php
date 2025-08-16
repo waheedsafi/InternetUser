@@ -10,6 +10,7 @@ use App\Enum\DeviceTypeEnum;
 use App\Enum\DirectorateTypeEnum;
 use App\Enum\EmploymentTypeEnum;
 use App\Enum\GroupEnum;
+use App\Enum\PermissionEnum;
 use App\Enum\RoleEnum;
 use App\Models\DeviceType;
 use App\Models\Group;
@@ -54,39 +55,44 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // User Permissions
+
+        permission::create([
+            'id'=>PermissionEnum::ViewUsers->value,
+            'name'=>'ViewUsers'
+        ]);
         Permission::create([
-            'name' => 'Create User',
-            'slug' => 'create-users',
+            'id'=>PermissionEnum::CreateUsers->value,
+            'name'=>'CreateUsers'
         ]);
 
         Permission::create([
-            'name' => 'Update User',
-            'slug' => 'update-users',
+            'id'=>PermissionEnum::UpdateUsers->value,
+            'name'=>'UpdateUsers'
         ]);
 
         Permission::create([
-            'name' => 'Delete User',
-            'slug' => 'delete-users',
+           'id'=>PermissionEnum::DeleteUsers->value,
+           'name'=>'DeleteUsers'
         ]);
 
         Permission::create([
-            'name' => 'View System Data',
-            'slug' => 'view-system-data',
+          'id'=>PermissionEnum::ViewSystemData->value,
+          'name'=>'ViewSystemData'
         ]);
 
         Permission::create([
-            'name' => 'Add System Data',
-            'slug' => 'add-system-data',
+           'id'=>PermissionEnum::AddSystemData->value,
+           'name'=>'AddSystemData'
         ]);
 
         Permission::create([
-            'name' => 'Delete System Data',
-            'slug' => 'delete-system-data',
+           'id'=>PermissionEnum::UpdateSystemData->value,
+           'name'=>'UpdateSystemData'
         ]);
 
         Permission::create([
-            'name' => 'Update System Data',
-            'slug' => 'update-system-data',
+           'id'=>PermissionEnum::DeleteSystemData->value,
+           'name'=>'DeleteSystemData'
         ]);
 
 

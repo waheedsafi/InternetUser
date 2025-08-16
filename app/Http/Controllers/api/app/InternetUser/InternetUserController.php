@@ -19,7 +19,7 @@ class InternetUserController extends Controller
 
 public function index()
 {
-    // یک subquery برای شمارش تخلفات
+   
     $violationCounts = DB::table('violations')
         ->select('internet_user_id', DB::raw('COUNT(*) as total_violations'))
         ->groupBy('internet_user_id');
