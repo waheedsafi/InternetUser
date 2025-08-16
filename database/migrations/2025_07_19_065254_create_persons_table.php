@@ -16,7 +16,7 @@ return new class extends Migration
           $table->string('name');
           $table->string('lastname');
           $table->string('email')->unique();
-          $table->string('phone')->unique();
+         $table->string('phone', 12)->unique();
           $table->string('position');
             $table->unsignedBigInteger('directorate_id');
           $table->foreign('directorate_id')->references('id')->on('directorates')

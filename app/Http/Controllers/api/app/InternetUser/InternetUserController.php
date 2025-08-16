@@ -6,6 +6,7 @@ use App\Models\InternetUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Group;
 use App\Models\Person;
 use App\Models\InternetUserDevice;
 
@@ -14,56 +15,81 @@ class InternetUserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
+  
 
-        $data = DB::table('internet_users as intu')
-            ->join('persons as per', 'per.id', '=', 'intu.person_id')
-            ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
-            ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
-            ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
-            ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')
-            ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
-            ->leftJoin('violations as val', 'val.internet_user_id', '=', 'intu.id')
-            ->select(
-                'intu.id',
-                'intu.mac_address',
-                'emp.name as employment_type',
-                'per.name',
-                'intu.device_limit',
-                'per.email',
-                'per.lastname',
-                'intu.username',
-                'per.phone',
-                'dir.name as directorate',
-                'intu.status',
-                'per.position',
-                'dt.name as device_type',
-                DB::raw('COUNT(val.id) as violations_count'),
-                'parent_dir.name as deputy'
-            )
-            ->groupBy(
-                'intu.id',
-                'intu.mac_address',
-                'emp.name',
-                'intu.device_limit',
-                'per.name',
-                'per.email',
-                'per.lastname',
-                'intu.username',
-                'per.phone',
-                'per.directorate_id',
-                'intu.status',
-                'dir.name',
-                'parent_dir.name',
-                'per.position',
-                'dt.name',
-            )
-            ->get();
+public function index()
+{
+   
+    $violationCounts = DB::table('violations')
+        ->select('internet_user_id', DB::raw('COUNT(*) as total_violations'))
+        ->groupBy('internet_user_id');
 
+    $data = DB::table('internet_users as intu')
+        ->join('persons as per', 'per.id', '=', 'intu.person_id')
+        ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
+        ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
+        ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
+        ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')
+        ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
+        ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
+        ->leftJoin('violations as val', function ($join) {
+            $join->on('val.internet_user_id', '=', 'intu.id')
+                 ->whereRaw('val.id = (
+                     SELECT MAX(v2.id) 
+                     FROM violations v2 
+                     WHERE v2.internet_user_id = intu.id
+                 )');
+        })
+        ->leftJoin('violations_types as valt', 'val.violation_type_id', '=', 'valt.id')
+        ->leftJoinSub($violationCounts, 'vc', function($join) {
+            $join->on('vc.internet_user_id', '=', 'intu.id');
+        })
+        ->select(
+            'intu.id',
+            'intu.mac_address',
+            'emp.name as employment_type',
+            'per.name',
+            'intu.device_limit',
+            'per.email',
+            'per.lastname',
+            'intu.username',
+            'per.phone',
+            'dir.name as directorate',
+            'intu.status',
+            'per.position',
+            'dt.name as device_type',
+            'gr.name as groups',
+            'val.comment',
+            'valt.name as violation_type',
+            DB::raw('COALESCE(vc.total_violations, 0) as violations_count'),
+            'parent_dir.name as deputy'
+        )
+        ->groupBy(
+            'intu.id',
+            'intu.mac_address',
+            'emp.name',
+            'intu.device_limit',
+            'per.name',
+            'per.email',
+            'per.lastname',
+            'intu.username',
+            'per.phone',
+            'per.directorate_id',
+            'intu.status',
+            'dir.name',
+            'parent_dir.name',
+            'per.position',
+            'dt.name',
+            'val.comment',
+            'valt.name',
+            'gr.name',
+            'vc.total_violations'
+        )
+        ->get();
 
-        return response()->json($data);
-    }
+    return response()->json($data);
+}
+
 
     /**
      * Show the form for creating a new resource.
@@ -76,67 +102,71 @@ class InternetUserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
+   public function store(Request $request)
+{
+    
+    DB::beginTransaction();
 
-        DB::beginTransaction();
+    try {
+        
+        $validated = $request->validate([
+            'username' => 'required|string|unique:internet_users,username',
+            'status' => 'required|in:0,1',
+            'phone' => 'required|string|max:15|unique:persons,phone',
+            'directorate_id' => 'required|exists:directorates,id',
+            'email' => 'required|unique:persons,email', 
+            'employee_type_id' => 'required|exists:employment_types,id', 
+            'mac_address' => 'nullable|unique:internet_users,mac_address', 
+            'group_id'=>'required|exists:groups,id',
+             
+        ]);
 
-        try {
+        
+     
+        $person = Person::create([
+            'name' => $request->name,
+            'lastname' => $request->lastname,
+            'email' => $validated['email'],  
+            'phone' => $validated['phone'],
+            'position' => $request->position,
+            'directorate_id' => $validated['directorate_id'],
+            'employment_type_id' => $validated['employee_type_id'], 
+        ]);
 
-            $validated = $request->validate([
-                'username' => 'required|string|unique:internet_users,username',
-                'status' => 'required|in:0,1',
-                'phone' => 'required|string|max:15|unique:persons,phone',
-                'directorate_id' => 'required|exists:directorates,id',
-                'email' => 'required|unique:persons,email',
-                'employee_type_id' => 'required|exists:employment_types,id',
-                'mac_address' => 'nullable|unique:internet_users,mac_address',
-            ]);
+        
+        $internetUser = InternetUser::create([
+            'person_id' => $person->id,
+            'group_id' => $validated['group_id'],
+            'username' => $validated['username'],
+            'status' => $validated['status'],
+            'phone' => $validated['phone'],
+            'device_limit' => $request->device_limit,
+            'mac_address' => $validated['mac_address'],
+        ]);
+        InternetUserDevice::create([
+            'internet_user_id' => $internetUser->id,
+            'device_type_id' => $request->device_type_id,
+        ]);  
+    
 
+        
+        DB::commit();
 
+        return response()->json([
+            'message' => 'Internet user successfully created.',
+            'data' => $internetUser,
+        ], 201);
+    } catch (\Exception $e) {
+        
+        DB::rollBack();
 
-            $person = Person::create([
-                'name' => $request->name,
-                'lastname' => $request->lastname,
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-                'position' => $request->position,
-                'directorate_id' => $validated['directorate_id'],
-                'employment_type_id' => $validated['employee_type_id'],
-            ]);
-
-
-            $internetUser = InternetUser::create([
-                'person_id' => $person->id,
-                'username' => $validated['username'],
-                'status' => $validated['status'],
-                'phone' => $validated['phone'],
-                'directorate_id' => $validated['directorate_id'],
-                'device_limit' => $request->device_limit,
-                'mac_address' => $validated['mac_address'],
-            ]);
-            InternetUserDevice::create([
-                'internet_user_id' => $internetUser->id,
-                'device_type_id' => $request->device_type_id,
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Internet user successfully created.',
-                'data' => $internetUser,
-            ], 201);
-        } catch (\Exception $e) {
-
-            DB::rollBack();
-
-
-            return response()->json([
-                'message' => 'An error occurred while creating the user.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        
+        return response()->json([
+            'message' => 'An error occurred while creating the user.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
 
     /**
@@ -152,20 +182,19 @@ class InternetUserController extends Controller
      */
     public function edit(string $id)
     {
-        try {
-
-            $internetUser = InternetUser::with(
-                'person',
-                'person.directorate',
-                'person.position',
-                'person.employmentType'
-            )
+         try {
+            
+            $internetUser = InternetUser::with('person',
+             'person.directorate',
+              'person.position', 
+              'person.employmentType')
                 ->findOrFail($id);
 
             return response()->json([
                 'message' => 'Internet user found.',
                 'data' => $internetUser,
             ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Internet user not found.',
@@ -181,61 +210,62 @@ class InternetUserController extends Controller
     {
         DB::beginTransaction();
 
-        try {
+    try {
+       
+        $validated = $request->validate([
+            'username' => 'required|string|unique:internet_users,username,' . $id,  
+            'status' => 'required|in:0,1',
+            'phone' => 'required|string|max:15|unique:persons,phone,' . $id,  
+            'directorate_id' => 'required|exists:directorates,id',
+            'email' => 'required|unique:persons,email,' . $id, 
+            'employee_type_id' => 'required|exists:employment_types,id',
+            'position' => 'required|exists:positions,id',
+            'person_id' => 'required|exists:persons,id',
+            'device_limit' => 'required|exists:internet_users,device_limit',
+            'mac_address' => 'nullable|exists:internet_users,mac_address',
+            'device_type_id' => 'required|exists:device_types,id',  
+        ]);
 
-            $validated = $request->validate([
-                'username' => 'required|string|unique:internet_users,username,' . $id,
-                'status' => 'required|in:0,1',
-                'phone' => 'required|string|max:15|unique:persons,phone,' . $id,
-                'directorate_id' => 'required|exists:directorates,id',
-                'email' => 'required|unique:persons,email,' . $id,
-                'employee_type_id' => 'required|exists:employment_types,id',
-                'position' => 'required|exists:positions,id',
-                'person_id' => 'required|exists:persons,id',
-                'device_limit' => 'required|exists:internet_users,device_limit',
-                'mac_address' => 'nullable|exists:internet_users,mac_address',
-                'device_type_id' => 'required|exists:device_types,id',
-            ]);
+        
+        $internetUser = InternetUser::findOrFail($id);
+        $person = $internetUser->person;  
 
+      
+        $person->update([
+            'name' => $request->name,
+            'lastname' => $request->lastname,
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'position' => $validated['position'],
+            'directorate_id' => $validated['directorate_id'],
+            'employment_type_id' => $validated['employee_type_id'],
+        ]);
 
-            $internetUser = InternetUser::findOrFail($id);
-            $person = $internetUser->person;
+       
+        $internetUser->update([
+            'username' => $validated['username'],
+            'status' => $validated['status'],
+            'phone' => $validated['phone'],
+            'directorate_id' => $validated['directorate_id'],
+            'device_limit' => $validated['device_limit'],
+            'mac_address' => $validated['mac_address'],
+        ]);
 
+        DB::commit();
 
-            $person->update([
-                'name' => $request->name,
-                'lastname' => $request->lastname,
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-                'position' => $validated['position'],
-                'directorate_id' => $validated['directorate_id'],
-                'employment_type_id' => $validated['employee_type_id'],
-            ]);
+        return response()->json([
+            'message' => 'Internet user successfully updated.',
+            'data' => $internetUser,
+        ], 200);
 
+    } catch (\Exception $e) {
+        DB::rollBack();
 
-            $internetUser->update([
-                'username' => $validated['username'],
-                'status' => $validated['status'],
-                'phone' => $validated['phone'],
-                'directorate_id' => $validated['directorate_id'],
-                'device_limit' => $validated['device_limit'],
-                'mac_address' => $validated['mac_address'],
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Internet user successfully updated.',
-                'data' => $internetUser,
-            ], 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'message' => 'An error occurred while updating the user.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'An error occurred while updating the user.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
     }
 
     /**
@@ -243,10 +273,10 @@ class InternetUserController extends Controller
      */
     public function destroy(string $id)
     {
-        DB::beginTransaction();
+         DB::beginTransaction();
 
         try {
-
+            
             $internetUser = InternetUser::findOrFail($id);
             $person = $internetUser->person;
             $internetUser->delete();
@@ -257,6 +287,7 @@ class InternetUserController extends Controller
             return response()->json([
                 'message' => 'Internet user and associated person successfully deleted.',
             ], 200);
+
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -267,29 +298,78 @@ class InternetUserController extends Controller
         }
     }
     public function getTotalUsers()
-    {
-
-        $totalUsers = InternetUser::count();
-        return response()->json([
-            'total_users' => $totalUsers,
-        ]);
-    }
-
-
-
-    public function updateStatus(Request $request, $id)
-    {
-        $internetUser = InternetUser::find($id);
-        if (!$internetUser) {
-            return response()->json([
-                'message' => 'User not found.',
-            ], 404);
-        }
-        $internetUser->status = $internetUser->status == 1 ? 0 : 1;
-        $internetUser->save();
-        return response()->json([
-            'message' => 'User status updated successfully.',
-            'status' => $internetUser->status,
-        ]);
-    }
+{
+    
+    $totalUsers = InternetUser::count();
+    return response()->json([
+        'total_users' => $totalUsers,
+    ]);
 }
+
+
+
+public function updateStatus(Request $request, $id)
+{
+    $internetUser = InternetUser::find($id);
+    if (!$internetUser) {
+        return response()->json([
+            'message' => 'User not found.',
+        ], 404);
+    }
+    $internetUser->status = $internetUser->status == 1 ? 0 : 1;
+    $internetUser->save();
+    return response()->json([
+        'message' => 'User status updated successfully.',
+        'status' => $internetUser->status,
+    ]);
+}
+
+    public function checkUsername(Request $request)
+{
+    $username = $request->input('username');
+    $exists = \App\Models\InternetUser::where('username', $username)->exists();
+
+    return response()->json(['exists' => $exists]);
+}
+
+public function checkEmailInternetUser(Request $request)
+{
+    $email = $request->input('email');
+
+    $exists = \App\Models\Person::where('email', $email)->exists();
+
+    return response()->json([
+        'exists' => $exists,
+        'message' => $exists ? 'This Email is Already Taken! Please Try Another One!' : ''
+    ]);
+}
+
+public function checkPhoneOfInternetUsers(Request $request)
+{
+    $phone = $request->input('phone');
+
+    $exists = \App\Models\Person::where('phone', $phone)->exists();
+
+    return response()->json([
+        'exists' => $exists,
+        'message' => $exists ? 'This Phone Number is Registered. Please Try another one!' : ''
+    ]);
+}
+
+public function checkMacAddress(Request $request)
+{
+    $mac = $request->input('mac_address');
+
+    $exists = \App\Models\InternetUser::where('mac_address', $mac)->exists();
+
+    return response()->json([
+        'exists' => $exists,
+        'message' => $exists ? 'This MAC Address is Already Registered! Please Try Another One!' : ''
+    ]);
+}
+
+
+
+
+
+    }
