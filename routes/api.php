@@ -18,9 +18,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile'])->middleware('check.access:ViewUsers');
     Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/register', [AuthController::class, 'register'])->middleware('check.access:CreateUsers');
-
 Route::get('/internet',[InternetUserController::class, 'index']);
 Route::get('/groups',[GroupController::class,'index']);
+Route::get('/group-count', [GroupController::class,'countsByType']);
 Route::get('/user',[AuthController::class,'index']);
 Route::put('/user/{id}', [AuthController::class, 'systemUsersUpdate'])->middleware('check.access:UpdateSystemData');
 Route::delete('/user/{id}', [AuthController::class, 'systemUsersDelete'])->middleware('check.access:DeleteSystemData'); 
