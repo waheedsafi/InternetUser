@@ -107,7 +107,7 @@ public function index()
     
     DB::beginTransaction();
 
-    try {
+    
         
         $validated = $request->validate([
             'username' => 'required|string|unique:internet_users,username',
@@ -156,7 +156,7 @@ public function index()
             'message' => 'Internet user successfully created.',
             'data' => $internetUser,
         ], 201);
-    } catch (\Exception $e) {
+    
         
         DB::rollBack();
 
@@ -165,7 +165,7 @@ public function index()
             'message' => 'An error occurred while creating the user.',
             'error' => $e->getMessage(),
         ], 500);
-    }
+    
 }
 
 
@@ -181,59 +181,55 @@ public function index()
      * Show the form for editing the specified resource.
      */
     public function edit(string $id)
-    {
-         try {
-            
-            $internetUser = InternetUser::with('person',
-             'person.directorate',
-              'person.position', 
-              'person.employmentType')
-                ->findOrFail($id);
+{
+    
+        $internetUser = InternetUser::with('person', 'person.directorate', 'person.employmentType')
+            ->findOrFail($id);
 
-            return response()->json([
-                'message' => 'Internet user found.',
-                'data' => $internetUser,
-            ], 200);
+        return response()->json([
+            'message' => 'Internet user found.',
+            'data' => $internetUser,
+        ], 200);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Internet user not found.',
-                'error' => $e->getMessage(),
-            ], 404);
-        }
-    }
+   
+        return response()->json([
+            'message' => 'Internet user not found.',
+            'error' => $e->getMessage(),
+        ], 404);
+    
+}
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
-        DB::beginTransaction();
+ public function update(Request $request, string $id)
+{
+  
+    $internetUser = InternetUser::findOrFail($id);
+    $person = $internetUser->person;
+
+    $validated = $request->validate([
+        'username' => 'required|string|unique:internet_users,username,' . $internetUser->id,
+        'status' => 'required|in:0,1',
+        'phone' => 'required|string|max:15|unique:persons,phone,' . $person->id,
+        'directorate_id' => 'required|exists:directorates,id',
+        'email' => 'required|email|unique:persons,email,' . $person->id,
+        'employee_type_id' => 'required|exists:employment_types,id',
+        'position' => 'required|exists:positions,id',
+        'device_limit' => 'required|integer',
+        'mac_address' => 'nullable|unique:internet_users,mac_address,' . $internetUser->id,
+        'device_type_id' => 'required|exists:device_types,id',
+        'group_id' => 'required|exists:groups,id',
+        'name' => 'required|string',
+        'lastname' => 'required|string',
+    ]);
+
+    DB::beginTransaction();
 
     try {
-       
-        $validated = $request->validate([
-            'username' => 'required|string|unique:internet_users,username,' . $id,  
-            'status' => 'required|in:0,1',
-            'phone' => 'required|string|max:15|unique:persons,phone,' . $id,  
-            'directorate_id' => 'required|exists:directorates,id',
-            'email' => 'required|unique:persons,email,' . $id, 
-            'employee_type_id' => 'required|exists:employment_types,id',
-            'position' => 'required|exists:positions,id',
-            'person_id' => 'required|exists:persons,id',
-            'device_limit' => 'required|exists:internet_users,device_limit',
-            'mac_address' => 'nullable|exists:internet_users,mac_address',
-            'device_type_id' => 'required|exists:device_types,id',  
-        ]);
-
-        
-        $internetUser = InternetUser::findOrFail($id);
-        $person = $internetUser->person;  
-
-      
         $person->update([
-            'name' => $request->name,
-            'lastname' => $request->lastname,
+            'name' => $validated['name'],
+            'lastname' => $validated['lastname'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'position' => $validated['position'],
@@ -241,15 +237,25 @@ public function index()
             'employment_type_id' => $validated['employee_type_id'],
         ]);
 
-       
         $internetUser->update([
             'username' => $validated['username'],
             'status' => $validated['status'],
-            'phone' => $validated['phone'],
-            'directorate_id' => $validated['directorate_id'],
             'device_limit' => $validated['device_limit'],
             'mac_address' => $validated['mac_address'],
+            'group_id' => $validated['group_id'],
         ]);
+
+        $userDevice = InternetUserDevice::where('internet_user_id', $internetUser->id)->first();
+        if ($userDevice) {
+            $userDevice->update([
+                'device_type_id' => $validated['device_type_id'],
+            ]);
+        } else {
+            InternetUserDevice::create([
+                'internet_user_id' => $internetUser->id,
+                'device_type_id' => $validated['device_type_id'],
+            ]);
+        }
 
         DB::commit();
 
@@ -266,37 +272,54 @@ public function index()
             'error' => $e->getMessage(),
         ], 500);
     }
-    }
+}
+
+
 
     /**
      * Remove thee specified resource from storage.
      */
-    public function destroy(string $id)
-    {
-         DB::beginTransaction();
+  public function destroy(string $id)
+{
+    DB::beginTransaction();
 
-        try {
-            
-            $internetUser = InternetUser::findOrFail($id);
-            $person = $internetUser->person;
-            $internetUser->delete();
+    try {
+        $internetUser = InternetUser::findOrFail($id);
+
+        
+        DB::table('violations')->where('internet_user_id', $internetUser->id)->delete();
+
+       
+        InternetUserDevice::where('internet_user_id', $internetUser->id)->delete();
+
+        
+        $internetUser->delete();
+
+        
+        $person = $internetUser->person;
+        if ($person) {
             $person->delete();
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Internet user and associated person successfully deleted.',
-            ], 200);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'message' => 'An error occurred while deleting the user.',
-                'error' => $e->getMessage(),
-            ], 500);
         }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Internet user and associated person successfully deleted.',
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+      
+
+        return response()->json([
+            'message' => 'An error occurred while deleting the user.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
     public function getTotalUsers()
 {
     

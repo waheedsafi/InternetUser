@@ -2,13 +2,14 @@
 
 namespace App\Http\Middleware;
 
-use App\Enum\PermissionEnum;
+use Closure;
 use App\Enum\RoleEnum;
 use App\Models\permission;
-use App\Models\RolePermission;
-use Closure;
-use Illuminate\Container\Attributes\Auth;
+use App\Enum\PermissionEnum;
 use Illuminate\Http\Request;
+use App\Models\RolePermission;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CheckAccess
 {
@@ -29,10 +30,11 @@ class CheckAccess
         }
     
         $roleId = $user->role_id;
-    
-        if ($roleId) {
+   $permissionEnum = PermissionEnum::fromName($permission);
+  
+        if ($roleId && $permissionEnum) {
             $hasPermission = RolePermission::where('role_id', $roleId)
-                ->where('permission_id', PermissionEnum::from($permission)->value)
+                ->where('permission_id', $permissionEnum->value)
                 ->exists();
     
             if ($hasPermission) {
