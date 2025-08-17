@@ -118,6 +118,7 @@ public function index()
             'employee_type_id' => 'required|exists:employment_types,id', 
             'mac_address' => 'nullable|unique:internet_users,mac_address', 
             'group_id'=>'required|exists:groups,id',
+            // 'device_type_ids' => 'required|array',
              
         ]);
 
@@ -146,7 +147,9 @@ public function index()
         InternetUserDevice::create([
             'internet_user_id' => $internetUser->id,
             'device_type_id' => $request->device_type_id,
-        ]);  
+        ]); 
+       
+        // $internetUser->deviceTypes()->sync($validated['device_type_ids']);
     
 
         
