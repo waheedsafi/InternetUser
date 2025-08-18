@@ -97,6 +97,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => RoleEnum::Admin->value,
                 'password' => Hash::make('adminpassword'),
             ]);
+           
         }
         $this->call(DirectorateSeeder::class);
         $this->call(PermissionSeeder::class);

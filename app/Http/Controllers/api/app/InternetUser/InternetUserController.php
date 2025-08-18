@@ -85,8 +85,11 @@ class InternetUserController extends Controller
                 'valt.name',
                 'gr.name',
                 'vc.total_violations'
+
             )
             ->get();
+
+
 
         return response()->json($data);
     }
@@ -226,7 +229,7 @@ class InternetUserController extends Controller
             'name' => 'required|string',
             'lastname' => 'required|string',
         ]);
-        Log::info('pass validate');
+        // Log::info('pass validate');
         DB::beginTransaction();
 
 
@@ -384,4 +387,15 @@ class InternetUserController extends Controller
             'message' => $exists ? 'This MAC Address is Already Registered! Please Try Another One!' : ''
         ]);
     }
+
+    public function getDeactivatedUsernames()
+{
+    $usernames = InternetUser::where('status', 0)
+        ->pluck('username');
+
+    return response()->json([
+        'data' => $usernames,
+    ]);
+}
+
 }

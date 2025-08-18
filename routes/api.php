@@ -44,4 +44,6 @@ Route::put('/violation/{id}',[ViolationTypeController::class,'update'])->middlew
 Route::post('/violationOnaUser', [ViolationController::class, 'store'])->middleware('check.access:AddSystemData');
 Route::get('/allViolationsFromUsers', [ViolationController::class, 'index']);
 Route::post('/check-email', [AuthController::class, 'checkEmail']);
+Route::get('/internet-users-deactivated', [InternetUserController::class, 'getDeactivatedUsernames']);
+
 });
