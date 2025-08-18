@@ -388,14 +388,15 @@ class InternetUserController extends Controller
         ]);
     }
 
-    public function getDeactivatedUsernames()
-{
-    $usernames = InternetUser::where('status', 0)
-        ->pluck('username');
+    public function getDeactivatedUsernames(Request $request)
+    {
+        $usernames = InternetUser::where('status', 0)
+            ->where('username', 'like', '%' . $request->input('query') . '%')
+            ->select('username')
+            ->get();
 
-    return response()->json([
-        'data' => $usernames,
-    ]);
-}
-
+        return response()->json([
+            'data' => $usernames,
+        ]);
+    }
 }
