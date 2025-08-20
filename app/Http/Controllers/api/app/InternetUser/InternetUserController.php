@@ -30,7 +30,6 @@ class InternetUserController extends Controller
             ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
             ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
             ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
-            ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')
             ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
             ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
             ->leftJoin('violations as val', function ($join) {
@@ -58,7 +57,6 @@ class InternetUserController extends Controller
                 'dir.name as directorate',
                 'intu.status',
                 'per.position',
-                'dt.name as device_type',
                 'gr.name as groups',
                 'val.comment',
                 'valt.name as violation_type',
@@ -80,7 +78,6 @@ class InternetUserController extends Controller
                 'dir.name',
                 'parent_dir.name',
                 'per.position',
-                'dt.name',
                 'val.comment',
                 'valt.name',
                 'gr.name',
@@ -106,69 +103,69 @@ class InternetUserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-   public function store(Request $request)
-{
-    DB::beginTransaction();
+    public function store(Request $request)
+    {
+        DB::beginTransaction();
 
-    try {
-        $validated = $request->validate([
-            'username' => 'required|string|unique:internet_users,username',
-            'status' => 'required|in:0,1',
-            'phone' => 'required|string|max:15|unique:persons,phone',
-            'directorate_id' => 'required|exists:directorates,id',
-            'email' => 'required|unique:persons,email',
-            'employee_type_id' => 'required|exists:employment_types,id',
-            'mac_address' => 'nullable|unique:internet_users,mac_address',
-            'group_id' => 'required|exists:groups,id',
-            'position' => 'required|string',
-            'device_type_ids' => 'required|array', // باید آرایه‌ای از device_type_id‌ها دریافت شود
-            'device_type_ids.*' => 'exists:device_types,id', // بررسی اعتبار دستگاه‌ها
-        ]);
-
-        // ذخیره‌سازی شخص
-        $person = Person::create([
-            'name' => $request->name,
-            'lastname' => $request->lastname,
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'position' => $validated['position'],
-            'directorate_id' => $validated['directorate_id'],
-            'employment_type_id' => $validated['employee_type_id'],
-        ]);
-
-        // ذخیره‌سازی کاربر اینترنت
-        $internetUser = InternetUser::create([
-            'person_id' => $person->id,
-            'group_id' => $validated['group_id'],
-            'username' => $validated['username'],
-            'status' => $validated['status'],
-            'phone' => $validated['phone'],
-            'device_limit' => $request->device_limit,
-            'mac_address' => $validated['mac_address'],
-        ]);
-
-        // ذخیره‌سازی دستگاه‌ها برای کاربر
-        foreach ($validated['device_type_ids'] as $deviceTypeId) {
-            InternetUserDevice::create([
-                'internet_user_id' => $internetUser->id,
-                'device_type_id' => $deviceTypeId,
+        try {
+            $validated = $request->validate([
+                'username' => 'required|string|unique:internet_users,username',
+                'status' => 'required|in:0,1',
+                'phone' => 'required|string|max:15|unique:persons,phone',
+                'directorate_id' => 'required|exists:directorates,id',
+                'email' => 'required|unique:persons,email',
+                'employee_type_id' => 'required|exists:employment_types,id',
+                'mac_address' => 'nullable|unique:internet_users,mac_address',
+                'group_id' => 'required|exists:groups,id',
+                'position' => 'required|string',
+                'device_type_ids' => 'required|array', // باید آرایه‌ای از device_type_id‌ها دریافت شود
+                'device_type_ids.*' => 'exists:device_types,id', // بررسی اعتبار دستگاه‌ها
             ]);
+
+            // ذخیره‌سازی شخص
+            $person = Person::create([
+                'name' => $request->name,
+                'lastname' => $request->lastname,
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'position' => $validated['position'],
+                'directorate_id' => $validated['directorate_id'],
+                'employment_type_id' => $validated['employee_type_id'],
+            ]);
+
+            // ذخیره‌سازی کاربر اینترنت
+            $internetUser = InternetUser::create([
+                'person_id' => $person->id,
+                'group_id' => $validated['group_id'],
+                'username' => $validated['username'],
+                'status' => $validated['status'],
+                'phone' => $validated['phone'],
+                'device_limit' => $request->device_limit,
+                'mac_address' => $validated['mac_address'],
+            ]);
+
+            // ذخیره‌سازی دستگاه‌ها برای کاربر
+            foreach ($validated['device_type_ids'] as $deviceTypeId) {
+                InternetUserDevice::create([
+                    'internet_user_id' => $internetUser->id,
+                    'device_type_id' => $deviceTypeId,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Internet user successfully created.',
+                'data' => $internetUser,
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'An error occurred while creating the user.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        DB::commit();
-
-        return response()->json([
-            'message' => 'Internet user successfully created.',
-            'data' => $internetUser,
-        ], 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'message' => 'An error occurred while creating the user.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
 
 
 
@@ -205,75 +202,75 @@ class InternetUserController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
-{
-    $internetUser = InternetUser::findOrFail($id);
-    $person = $internetUser->person;
+    {
+        $internetUser = InternetUser::findOrFail($id);
+        $person = $internetUser->person;
 
-    $validated = $request->validate([
-        'username' => 'required|string|unique:internet_users,username,' . $internetUser->id,
-        'status' => 'required|in:0,1',
-        'phone' => 'required|string|max:15|unique:persons,phone,' . $person->id,
-        'directorate_id' => 'required|exists:directorates,id',
-        'email' => 'required|email|unique:persons,email,' . $person->id,
-        'employee_type_id' => 'required|exists:employment_types,id',
-        'position' => 'required|string',
-        'device_limit' => 'required|integer',
-        'mac_address' => 'nullable|unique:internet_users,mac_address,' . $internetUser->id,
-        'device_type_ids' => 'required|array',  // آرایه از دستگاه‌ها
-        'device_type_ids.*' => 'exists:device_types,id', // بررسی صحت دستگاه‌ها
-        'group_id' => 'required|exists:groups,id',
-        'name' => 'required|string',
-        'lastname' => 'required|string',
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        // بروزرسانی اطلاعات شخص
-        $person->update([
-            'name' => $validated['name'],
-            'lastname' => $validated['lastname'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'position' => $validated['position'],
-            'directorate_id' => $validated['directorate_id'],
-            'employment_type_id' => $validated['employee_type_id'],
+        $validated = $request->validate([
+            'username' => 'required|string|unique:internet_users,username,' . $internetUser->id,
+            'status' => 'required|in:0,1',
+            'phone' => 'required|string|max:15|unique:persons,phone,' . $person->id,
+            'directorate_id' => 'required|exists:directorates,id',
+            'email' => 'required|email|unique:persons,email,' . $person->id,
+            'employee_type_id' => 'required|exists:employment_types,id',
+            'position' => 'required|string',
+            'device_limit' => 'required|integer',
+            'mac_address' => 'nullable|unique:internet_users,mac_address,' . $internetUser->id,
+            'device_type_ids' => 'required|array',  // آرایه از دستگاه‌ها
+            'device_type_ids.*' => 'exists:device_types,id', // بررسی صحت دستگاه‌ها
+            'group_id' => 'required|exists:groups,id',
+            'name' => 'required|string',
+            'lastname' => 'required|string',
         ]);
 
-        // بروزرسانی اطلاعات کاربر اینترنت
-        $internetUser->update([
-            'username' => $validated['username'],
-            'status' => $validated['status'],
-            'device_limit' => $validated['device_limit'],
-            'mac_address' => $validated['mac_address'],
-            'group_id' => $validated['group_id'],
-        ]);
+        DB::beginTransaction();
 
-        // حذف دستگاه‌های قبلی
-        InternetUserDevice::where('internet_user_id', $internetUser->id)->delete();
-
-        // ذخیره دستگاه‌های جدید
-        foreach ($validated['device_type_ids'] as $deviceTypeId) {
-            InternetUserDevice::create([
-                'internet_user_id' => $internetUser->id,
-                'device_type_id' => $deviceTypeId,
+        try {
+            // بروزرسانی اطلاعات شخص
+            $person->update([
+                'name' => $validated['name'],
+                'lastname' => $validated['lastname'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'position' => $validated['position'],
+                'directorate_id' => $validated['directorate_id'],
+                'employment_type_id' => $validated['employee_type_id'],
             ]);
+
+            // بروزرسانی اطلاعات کاربر اینترنت
+            $internetUser->update([
+                'username' => $validated['username'],
+                'status' => $validated['status'],
+                'device_limit' => $validated['device_limit'],
+                'mac_address' => $validated['mac_address'],
+                'group_id' => $validated['group_id'],
+            ]);
+
+            // حذف دستگاه‌های قبلی
+            InternetUserDevice::where('internet_user_id', $internetUser->id)->delete();
+
+            // ذخیره دستگاه‌های جدید
+            foreach ($validated['device_type_ids'] as $deviceTypeId) {
+                InternetUserDevice::create([
+                    'internet_user_id' => $internetUser->id,
+                    'device_type_id' => $deviceTypeId,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Internet user successfully updated.',
+                'data' => $internetUser,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'An error occurred while updating the user.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        DB::commit();
-
-        return response()->json([
-            'message' => 'Internet user successfully updated.',
-            'data' => $internetUser,
-        ], 200);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'message' => 'An error occurred while updating the user.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
 
 
 
