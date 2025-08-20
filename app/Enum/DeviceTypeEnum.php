@@ -9,3 +9,4 @@ enum DeviceTypeEnum: int
    case Mobile =4;
    case AllInOne=5;
 }
+///
