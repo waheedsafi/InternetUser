@@ -8,5 +8,5 @@ enum DeviceTypeEnum: int
     case Laptop = 2;
     case Tablet = 3;
     case Mobile = 4;
-    case AllInOne = 5;
+    case AllInOne =5;
 }

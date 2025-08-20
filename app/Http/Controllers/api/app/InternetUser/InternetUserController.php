@@ -106,13 +106,11 @@ class InternetUserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
+   public function store(Request $request)
+{
+    DB::beginTransaction();
 
-        DB::beginTransaction();
-
-
-
+    try {
         $validated = $request->validate([
             'username' => 'required|string|unique:internet_users,username',
             'status' => 'required|in:0,1',
@@ -123,12 +121,11 @@ class InternetUserController extends Controller
             'mac_address' => 'nullable|unique:internet_users,mac_address',
             'group_id' => 'required|exists:groups,id',
             'position' => 'required|string',
-            // 'device_type_ids' => 'required|array',
-
+            'device_type_ids' => 'required|array', // باید آرایه‌ای از device_type_id‌ها دریافت شود
+            'device_type_ids.*' => 'exists:device_types,id', // بررسی اعتبار دستگاه‌ها
         ]);
 
-
-
+        // ذخیره‌سازی شخص
         $person = Person::create([
             'name' => $request->name,
             'lastname' => $request->lastname,
@@ -139,7 +136,7 @@ class InternetUserController extends Controller
             'employment_type_id' => $validated['employee_type_id'],
         ]);
 
-
+        // ذخیره‌سازی کاربر اینترنت
         $internetUser = InternetUser::create([
             'person_id' => $person->id,
             'group_id' => $validated['group_id'],
@@ -149,14 +146,14 @@ class InternetUserController extends Controller
             'device_limit' => $request->device_limit,
             'mac_address' => $validated['mac_address'],
         ]);
-        InternetUserDevice::create([
-            'internet_user_id' => $internetUser->id,
-            'device_type_id' => $request->device_type_id,
-        ]);
 
-        // $internetUser->deviceTypes()->sync($validated['device_type_ids']);
-
-
+        // ذخیره‌سازی دستگاه‌ها برای کاربر
+        foreach ($validated['device_type_ids'] as $deviceTypeId) {
+            InternetUserDevice::create([
+                'internet_user_id' => $internetUser->id,
+                'device_type_id' => $deviceTypeId,
+            ]);
+        }
 
         DB::commit();
 
@@ -164,16 +161,15 @@ class InternetUserController extends Controller
             'message' => 'Internet user successfully created.',
             'data' => $internetUser,
         ], 201);
-
-
+    } catch (\Exception $e) {
         DB::rollBack();
-
-
         return response()->json([
             'message' => 'An error occurred while creating the user.',
             'error' => $e->getMessage(),
         ], 500);
     }
+}
+
 
 
     /**
@@ -209,30 +205,31 @@ class InternetUserController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
-    {
+{
+    $internetUser = InternetUser::findOrFail($id);
+    $person = $internetUser->person;
 
-        $internetUser = InternetUser::findOrFail($id);
-        $person = $internetUser->person;
+    $validated = $request->validate([
+        'username' => 'required|string|unique:internet_users,username,' . $internetUser->id,
+        'status' => 'required|in:0,1',
+        'phone' => 'required|string|max:15|unique:persons,phone,' . $person->id,
+        'directorate_id' => 'required|exists:directorates,id',
+        'email' => 'required|email|unique:persons,email,' . $person->id,
+        'employee_type_id' => 'required|exists:employment_types,id',
+        'position' => 'required|string',
+        'device_limit' => 'required|integer',
+        'mac_address' => 'nullable|unique:internet_users,mac_address,' . $internetUser->id,
+        'device_type_ids' => 'required|array',  // آرایه از دستگاه‌ها
+        'device_type_ids.*' => 'exists:device_types,id', // بررسی صحت دستگاه‌ها
+        'group_id' => 'required|exists:groups,id',
+        'name' => 'required|string',
+        'lastname' => 'required|string',
+    ]);
 
-        $validated = $request->validate([
-            'username' => 'required|string|unique:internet_users,username,' . $internetUser->id,
-            'status' => 'required|in:0,1',
-            'phone' => 'required|string|max:15|unique:persons,phone,' . $person->id,
-            'directorate_id' => 'required|exists:directorates,id',
-            'email' => 'required|email|unique:persons,email,' . $person->id,
-            'employee_type_id' => 'required|exists:employment_types,id',
-            'position' => 'required|string',
-            'device_limit' => 'required|integer',
-            'mac_address' => 'nullable|unique:internet_users,mac_address,' . $internetUser->id,
-            'device_type_id' => 'required|exists:device_types,id',
-            'group_id' => 'required|exists:groups,id',
-            'name' => 'required|string',
-            'lastname' => 'required|string',
-        ]);
-        // Log::info('pass validate');
-        DB::beginTransaction();
+    DB::beginTransaction();
 
-
+    try {
+        // بروزرسانی اطلاعات شخص
         $person->update([
             'name' => $validated['name'],
             'lastname' => $validated['lastname'],
@@ -243,6 +240,7 @@ class InternetUserController extends Controller
             'employment_type_id' => $validated['employee_type_id'],
         ]);
 
+        // بروزرسانی اطلاعات کاربر اینترنت
         $internetUser->update([
             'username' => $validated['username'],
             'status' => $validated['status'],
@@ -251,11 +249,16 @@ class InternetUserController extends Controller
             'group_id' => $validated['group_id'],
         ]);
 
-        InternetUserDevice::where('internet_user_id', $internetUser->id)
-            ->update([
-                'device_type_id' => $validated['device_type_id']
-            ]);
+        // حذف دستگاه‌های قبلی
+        InternetUserDevice::where('internet_user_id', $internetUser->id)->delete();
 
+        // ذخیره دستگاه‌های جدید
+        foreach ($validated['device_type_ids'] as $deviceTypeId) {
+            InternetUserDevice::create([
+                'internet_user_id' => $internetUser->id,
+                'device_type_id' => $deviceTypeId,
+            ]);
+        }
 
         DB::commit();
 
@@ -263,14 +266,14 @@ class InternetUserController extends Controller
             'message' => 'Internet user successfully updated.',
             'data' => $internetUser,
         ], 200);
-
+    } catch (\Exception $e) {
         DB::rollBack();
-
         return response()->json([
             'message' => 'An error occurred while updating the user.',
             'error' => $e->getMessage(),
         ], 500);
     }
+}
 
 
 
