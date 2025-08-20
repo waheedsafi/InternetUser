@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\api\app\Account\AccountActivationController;
 use App\Http\Controllers\api\app\Directorate\DirectorateController;
 use App\Http\Controllers\api\app\EmploymentType\EmploymentTypeController;
 use App\Http\Controllers\api\app\InternetUser\InternetUserController;
@@ -45,4 +46,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/allViolationsFromUsers', [ViolationController::class, 'index']);
     Route::post('/check-email', [AuthController::class, 'checkEmail']);
     Route::get('/internet-users-deactivated', [InternetUserController::class, 'getDeactivatedUsernames']);
+    Route::post('/account/activate', [AccountActivationController::class, 'activateAccount']);
 });

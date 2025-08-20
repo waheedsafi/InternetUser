@@ -38,11 +38,11 @@ class ViolationController extends Controller
    
     $violationCount = Violation::where('internet_user_id', $validated['internet_user_id'])->count();
 
-    if ($violationCount >= 2) {
-        return response()->json([
-            'message' => 'This user has already violated twice and cannot have a new violation.',
-        ], 403);
-    }
+    // if ($violationCount >= 2) {
+    //     return response()->json([
+    //         'message' => 'This user has already violated twice and cannot have a new violation.',
+    //     ], 403);
+    // }
 
     
     DB::beginTransaction();
