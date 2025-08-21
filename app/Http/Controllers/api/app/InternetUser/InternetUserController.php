@@ -146,6 +146,7 @@ public function edit(string $id)
         ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
         ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
         ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
+         ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')
         ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
         ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
         
@@ -161,6 +162,7 @@ public function edit(string $id)
         ->where('intu.id', '=' ,$id)
         ->select(
             'intu.id',
+            'dt.name as device_type',
             'intu.mac_address',
             'emp.name as employment_type',
             'per.name',
@@ -174,10 +176,11 @@ public function edit(string $id)
             'per.position',
             'gr.name as groups',
             'val.comment',
-            'valt.name', ////////
-              DB::raw('COUNT(val.id) as violation_count'),
+            'valt.name as violation_type' , ////////
+           DB::raw('(SELECT COUNT(*) FROM violations WHERE internet_user_id = intu.id) as violation_count'),
             'parent_dir.name as deputy'
         )
+          
        ->first();
 
     if (!$internetUser) {
