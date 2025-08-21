@@ -29,7 +29,7 @@ class InternetUserController extends Controller
        
         ->select(
             'per.name',
-             'emp.name as employment_type',
+            'emp.name as employment_type',
             'per.email',
             'per.phone',
             'per.lastname',
@@ -173,7 +173,8 @@ public function edit(string $id)
             'per.position',
             'gr.name as groups',
             'val.comment',
-            'valt.name',
+            'valt.name as violation_type',
+            DB::raw('(SELECT COUNT(*) FROM violations WHERE internet_user_id = intu.id) as violation_count'),
             'parent_dir.name as deputy'
         )
        ->first();

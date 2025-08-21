@@ -27,7 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/user/{id}', [AuthController::class, 'systemUsersDelete'])->middleware('check.access:DeleteSystemData');
     Route::post('/internet', [InternetUserController::class, 'store'])->middleware('check.access:AddSystemData');
     Route::put('/internet/{id}', [InternetUserController::class, 'update'])->middleware('check.access:UpdateSystemData');
-    Route::get('/internet-user-edit',[InternetUserController::class,'edit'])->middleware('check.access:UpdateSystemData');
+    Route::get('/internet-user-edit/{id}',[InternetUserController::class,'edit'])->middleware('check.access:UpdateSystemData');
     Route::post('/check-username', [InternetUserController::class, 'checkUsername']);
     Route::post('/check-email-of-internet-users', [InternetUserController::class, 'checkEmailInternetUser']);
     Route::post('/check-phone-of-internet-user', [InternetUserController::class, 'checkPhoneOfInternetUsers']);
