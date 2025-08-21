@@ -148,6 +148,7 @@ public function edit(string $id)
         ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
         ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
         ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
+        
         ->leftJoin('violations as val', function ($join) {
             $join->on('val.internet_user_id', '=', 'intu.id')
                 ->whereRaw('val.id = (
@@ -174,6 +175,7 @@ public function edit(string $id)
             'gr.name as groups',
             'val.comment',
             'valt.name',
+              DB::raw('COUNT(val.id) as violation_count'),
             'parent_dir.name as deputy'
         )
        ->first();
