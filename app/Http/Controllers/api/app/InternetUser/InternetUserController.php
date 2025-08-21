@@ -174,7 +174,7 @@ public function edit(string $id)
             'per.position',
             'gr.name as groups',
             'val.comment',
-            'valt.name',
+            'valt.name', ////////
               DB::raw('COUNT(val.id) as violation_count'),
             'parent_dir.name as deputy'
         )
