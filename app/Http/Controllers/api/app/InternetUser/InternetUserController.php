@@ -18,78 +18,36 @@ class InternetUserController extends Controller
      */
 
 
-    public function index()
-    {
+     public function index()
+      
+{
+    $data = DB::table('internet_users as intu')
+        ->join('persons as per', 'per.id', '=', 'intu.person_id')
+        ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
+        ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
+        ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
+       
+        ->select(
+            'per.name',
+             'emp.name as employment_type',
+            'per.email',
+            'per.phone',
+            'per.lastname',
+            'intu.username',
+            'dir.name as directorate',
+            'per.position',
+            'gr.name as groups',
+            'intu.status',
+            'intu.id',
+            
+        )
+        
+       
+        ->get();
 
-        $violationCounts = DB::table('violations')
-            ->select('internet_user_id', DB::raw('COUNT(*) as total_violations'))
-            ->groupBy('internet_user_id');
+    return response()->json($data);
+}
 
-        $data = DB::table('internet_users as intu')
-            ->join('persons as per', 'per.id', '=', 'intu.person_id')
-            ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
-            ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
-            ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
-            ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
-            ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
-            ->leftJoin('violations as val', function ($join) {
-                $join->on('val.internet_user_id', '=', 'intu.id')
-                    ->whereRaw('val.id = (
-                     SELECT MAX(v2.id) 
-                     FROM violations v2 
-                     WHERE v2.internet_user_id = intu.id
-                 )');
-            })
-            ->leftJoin('violations_types as valt', 'val.violation_type_id', '=', 'valt.id')
-            ->leftJoinSub($violationCounts, 'vc', function ($join) {
-                $join->on('vc.internet_user_id', '=', 'intu.id');
-            })
-            ->select(
-                'intu.id',
-                'intu.mac_address',
-                'emp.name as employment_type',
-                'per.name',
-                'intu.device_limit',
-                'per.email',
-                'per.lastname',
-                'intu.username',
-                'per.phone',
-                'dir.name as directorate',
-                'intu.status',
-                'per.position',
-                'gr.name as groups',
-                'val.comment',
-                'valt.name as violation_type',
-                DB::raw('COALESCE(vc.total_violations, 0) as violations_count'),
-                'parent_dir.name as deputy'
-            )
-            ->groupBy(
-                'intu.id',
-                'intu.mac_address',
-                'emp.name',
-                'intu.device_limit',
-                'per.name',
-                'per.email',
-                'per.lastname',
-                'intu.username',
-                'per.phone',
-                'per.directorate_id',
-                'intu.status',
-                'dir.name',
-                'parent_dir.name',
-                'per.position',
-                'val.comment',
-                'valt.name',
-                'gr.name',
-                'vc.total_violations'
-
-            )
-            ->get();
-
-
-
-        return response()->json($data);
-    }
 
 
     /**
@@ -118,11 +76,11 @@ class InternetUserController extends Controller
                 'mac_address' => 'nullable|unique:internet_users,mac_address',
                 'group_id' => 'required|exists:groups,id',
                 'position' => 'required|string',
-                'device_type_ids' => 'required|array', // باید آرایه‌ای از device_type_id‌ها دریافت شود
-                'device_type_ids.*' => 'exists:device_types,id', // بررسی اعتبار دستگاه‌ها
+                'device_type_ids' => 'required|array', 
+                'device_type_ids.*' => 'exists:device_types,id', 
             ]);
 
-            // ذخیره‌سازی شخص
+           
             $person = Person::create([
                 'name' => $request->name,
                 'lastname' => $request->lastname,
@@ -133,7 +91,7 @@ class InternetUserController extends Controller
                 'employment_type_id' => $validated['employee_type_id'],
             ]);
 
-            // ذخیره‌سازی کاربر اینترنت
+            
             $internetUser = InternetUser::create([
                 'person_id' => $person->id,
                 'group_id' => $validated['group_id'],
@@ -144,7 +102,7 @@ class InternetUserController extends Controller
                 'mac_address' => $validated['mac_address'],
             ]);
 
-            // ذخیره‌سازی دستگاه‌ها برای کاربر
+           
             foreach ($validated['device_type_ids'] as $deviceTypeId) {
                 InternetUserDevice::create([
                     'internet_user_id' => $internetUser->id,
@@ -180,23 +138,58 @@ class InternetUserController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
-    {
+public function edit(string $id)
+{
+    
+    $internetUser = DB::table('internet_users as intu')
+        ->join('persons as per', 'per.id', '=', 'intu.person_id')
+        ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
+        ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
+        ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
+        ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
+        ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
+        ->leftJoin('violations as val', function ($join) {
+            $join->on('val.internet_user_id', '=', 'intu.id')
+                ->whereRaw('val.id = (
+                    SELECT MAX(v2.id) 
+                    FROM violations v2 
+                    WHERE v2.internet_user_id = intu.id
+                )');
+        })
+        ->leftJoin('violations_types as valt', 'val.violation_type_id', '=', 'valt.id')
+        ->where('intu.id', '=' ,$id)
+        ->select(
+            'intu.id',
+            'intu.mac_address',
+            'emp.name as employment_type',
+            'per.name',
+            'intu.device_limit',
+            'per.email',
+            'per.lastname',
+            'intu.username',
+            'per.phone',
+            'dir.name as directorate',
+            'intu.status',
+            'per.position',
+            'gr.name as groups',
+            'val.comment',
+            'valt.name',
+            'parent_dir.name as deputy'
+        )
+       ->first();
 
-        $internetUser = InternetUser::with('person', 'person.directorate', 'person.employmentType')
-            ->findOrFail($id);
-
-        return response()->json([
-            'message' => 'Internet user found.',
-            'data' => $internetUser,
-        ], 200);
-
-
+    if (!$internetUser) {
         return response()->json([
             'message' => 'Internet user not found.',
-            'error' => $e->getMessage(),
         ], 404);
     }
+
+    return response()->json([
+        'message' => 'Internet user found.',
+        'data' => $internetUser,
+    ], 200);
+}
+
 
     /**
      * Update the specified resource in storage.
@@ -216,8 +209,8 @@ class InternetUserController extends Controller
             'position' => 'required|string',
             'device_limit' => 'required|integer',
             'mac_address' => 'nullable|unique:internet_users,mac_address,' . $internetUser->id,
-            'device_type_ids' => 'required|array',  // آرایه از دستگاه‌ها
-            'device_type_ids.*' => 'exists:device_types,id', // بررسی صحت دستگاه‌ها
+            'device_type_ids' => 'required|array',  
+            'device_type_ids.*' => 'exists:device_types,id', 
             'group_id' => 'required|exists:groups,id',
             'name' => 'required|string',
             'lastname' => 'required|string',
@@ -226,7 +219,7 @@ class InternetUserController extends Controller
         DB::beginTransaction();
 
         try {
-            // بروزرسانی اطلاعات شخص
+            
             $person->update([
                 'name' => $validated['name'],
                 'lastname' => $validated['lastname'],
@@ -237,7 +230,7 @@ class InternetUserController extends Controller
                 'employment_type_id' => $validated['employee_type_id'],
             ]);
 
-            // بروزرسانی اطلاعات کاربر اینترنت
+           
             $internetUser->update([
                 'username' => $validated['username'],
                 'status' => $validated['status'],
@@ -246,10 +239,10 @@ class InternetUserController extends Controller
                 'group_id' => $validated['group_id'],
             ]);
 
-            // حذف دستگاه‌های قبلی
+            
             InternetUserDevice::where('internet_user_id', $internetUser->id)->delete();
 
-            // ذخیره دستگاه‌های جدید
+           
             foreach ($validated['device_type_ids'] as $deviceTypeId) {
                 InternetUserDevice::create([
                     'internet_user_id' => $internetUser->id,
