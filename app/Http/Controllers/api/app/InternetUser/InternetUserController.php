@@ -99,7 +99,8 @@ class InternetUserController extends Controller
                 'status' => $validated['status'],
                 'phone' => $validated['phone'],
                 'device_limit' => $request->device_limit,
-                'mac_address' => $validated['mac_address'],
+                //fardin added this for edit modal in the frontend
+                'mac_address' => $validated['mac_address'] ?? null,
             ]);
 
            
@@ -140,24 +141,20 @@ class InternetUserController extends Controller
      */
 public function edit(string $id)
 {
-    
-    $internetUser = DB::table('internet_users as intu')
+    $internetUserRows = DB::table('internet_users as intu')
         ->join('persons as per', 'per.id', '=', 'intu.person_id')
         ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
         ->join('employment_types as emp', 'emp.id', '=', 'per.employment_type_id')
-        ->join('internet_user_devices as user', 'user.internet_user_id', '=', 'intu.id')
+        ->join('internet_user_devices as iud', 'iud.internet_user_id', '=', 'intu.id')
+        ->join('device_types as dt', 'iud.device_type_id', '=', 'dt.id')
         ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
         ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
-        ->leftJoin('violations as val', function ($join) {
+        ->leftJoin('violations as val', function($join) {
             $join->on('val.internet_user_id', '=', 'intu.id')
-                ->whereRaw('val.id = (
-                    SELECT MAX(v2.id) 
-                    FROM violations v2 
-                    WHERE v2.internet_user_id = intu.id
-                )');
+                 ->whereRaw('val.id = (SELECT MAX(v2.id) FROM violations v2 WHERE v2.internet_user_id = intu.id)');
         })
         ->leftJoin('violations_types as valt', 'val.violation_type_id', '=', 'valt.id')
-        ->where('intu.id', '=' ,$id)
+        ->where('intu.id', $id)
         ->select(
             'intu.id',
             'intu.mac_address',
@@ -175,21 +172,30 @@ public function edit(string $id)
             'val.comment',
             'valt.name as violation_type',
             DB::raw('(SELECT COUNT(*) FROM violations WHERE internet_user_id = intu.id) as violation_count'),
-            'parent_dir.name as deputy'
+            'parent_dir.name as deputy',
+            'dt.name as device_type' // نام دیوایس
         )
-       ->first();
+        ->get();
 
-    if (!$internetUser) {
+    if ($internetUserRows->isEmpty()) {
         return response()->json([
             'message' => 'Internet user not found.',
         ], 404);
     }
+
+    // جمع کردن همه دیوایس‌ها در یک آرایه
+    $internetUser = $internetUserRows->groupBy('id')->map(function($rows) {
+        $first = $rows->first();
+        $first->device_types = $rows->pluck('device_type')->toArray(); // آرایه دیوایس‌ها
+        return $first;
+    })->values()->first(); // چون فقط یک یوزر داریم
 
     return response()->json([
         'message' => 'Internet user found.',
         'data' => $internetUser,
     ], 200);
 }
+
 
 
     /**
