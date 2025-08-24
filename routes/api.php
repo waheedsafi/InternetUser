@@ -27,7 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/user/{id}', [AuthController::class, 'systemUsersDelete'])->middleware('check.access:DeleteSystemData');
     Route::post('/internet', [InternetUserController::class, 'store'])->middleware('check.access:AddSystemData');
     Route::put('/internet/{id}', [InternetUserController::class, 'update'])->middleware('check.access:UpdateSystemData');
-    Route::get('/internet-user-edit/{id}',[InternetUserController::class,'edit'])->middleware('check.access:UpdateSystemData');
+    Route::get('/internet-user-edit/{id}', [InternetUserController::class, 'edit'])->middleware('check.access:UpdateSystemData');
     Route::post('/check-username', [InternetUserController::class, 'checkUsername']);
     Route::post('/check-email-of-internet-users', [InternetUserController::class, 'checkEmailInternetUser']);
     Route::post('/check-phone-of-internet-user', [InternetUserController::class, 'checkPhoneOfInternetUsers']);
@@ -47,5 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/allViolationsFromUsers', [ViolationController::class, 'index']);
     Route::post('/check-email', [AuthController::class, 'checkEmail']);
     Route::get('/internet-users-deactivated', [InternetUserController::class, 'getDeactivatedUsernames']);
-    Route::post('/account/activate', [AccountActivationController::class, 'activateAccount']);
+    Route::post('/account/activate', [AccountActivationController::class, 'activateAccount'])->middleware('check.access:AddSystemData');
+    Route::get('/all-reactivation', [AccountActivationController::class, 'index']);
+    Route::get('/account-activation/{id}/edit', [AccountActivationController::class, 'edit']);
+    Route::put('/account-activation/{id}', [AccountActivationController::class, 'update'])->middleware('check.access:UpdateSystemData');
+    Route::delete('/account-activation/{id}', [AccountActivationController::class, 'destroy'])->middleware('check.access:DeleteSystemData');
 });

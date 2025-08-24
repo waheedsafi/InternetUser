@@ -402,7 +402,6 @@ class InternetUserController extends Controller
     {
         $usernames = InternetUser::where('status', 0)
             ->where('username', 'like', '%' . $request->input('query') . '%')
-            //i added id here
             ->select('id','username')
             ->get();
 
