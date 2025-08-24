@@ -400,7 +400,7 @@ class InternetUserController extends Controller
     {
         $usernames = InternetUser::where('status', 0)
             ->where('username', 'like', '%' . $request->input('query') . '%')
-            ->select('username')
+            ->select('id','username')
             ->get();
 
         return response()->json([
