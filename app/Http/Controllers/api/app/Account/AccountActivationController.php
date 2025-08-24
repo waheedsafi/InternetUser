@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountActivation;
 use App\Models\InternetUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AccountActivationController extends Controller
 {
+
+    // public function index(){
+    //     $activate = DB::table(); 
+    // }
     public function activateAccount(Request $request)
     {
         $request->validate([
@@ -20,7 +25,7 @@ class AccountActivationController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
         $user->status = true;
-        $user->save;
+        $user->save();
         AccountActivation::create([
             'internet_user_id' => $user->id,
             'reason' => $request->reason,

@@ -9,6 +9,7 @@ class AccountActivation extends Model
     protected $fillable = [
         'internet_user_id',
         'reason',
+        'id'
     ];
 
     
