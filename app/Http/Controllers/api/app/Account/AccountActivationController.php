@@ -20,7 +20,8 @@ class AccountActivationController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
         $user->status = true;
-        $user->save;
+        // i added () after save
+        $user->save();
         AccountActivation::create([
             'internet_user_id' => $user->id,
             'reason' => $request->reason,
