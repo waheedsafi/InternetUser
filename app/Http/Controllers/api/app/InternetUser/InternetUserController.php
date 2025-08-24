@@ -180,7 +180,7 @@ class InternetUserController extends Controller
                 'parent_dir.name as deputy'
             )
             ->get();
-            ///
+        ///
 
 
         if (!$internetUser) {
@@ -400,11 +400,43 @@ class InternetUserController extends Controller
     {
         $usernames = InternetUser::where('status', 0)
             ->where('username', 'like', '%' . $request->input('query') . '%')
-            ->select('id','username')
+            ->select('id', 'username')
             ->get();
 
         return response()->json([
             'data' => $usernames,
         ]);
+    }
+
+    public function Violationform()
+    {
+        $internetUser = DB::table('internet_users as intu')
+            ->join('persons as per', 'per.id', '=', 'intu.person_id')
+            ->join('directorates as dir', 'dir.id', '=', 'per.directorate_id')
+            ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
+            ->leftJoin('violations as val', function ($join) {
+                $join->on('val.internet_user_id', '=', 'intu.id')
+                    ->whereRaw('val.id = (
+                    SELECT MAX(v2.id) 
+                    FROM violations v2 
+                    WHERE v2.internet_user_id = intu.id
+                )');
+            })
+            ->select(
+                'intu.id',
+                'per.name',
+                'intu.username',
+                'dir.name as directorate',
+                'per.position',
+                'val.comment',
+                DB::raw('(SELECT COUNT(*) FROM violations WHERE internet_user_id = intu.id) as violation_count'),
+                'parent_dir.name as deputy'
+            )
+            ->get();
+
+        return response()->json([
+            'message' => 'Internet user found.',
+            'data' => $internetUser
+        ], 200);
     }
 }
