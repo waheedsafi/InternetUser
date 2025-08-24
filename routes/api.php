@@ -52,4 +52,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/account-activation/{id}/edit', [AccountActivationController::class, 'edit']);
     Route::put('/account-activation/{id}', [AccountActivationController::class, 'update'])->middleware('check.access:UpdateSystemData');
     Route::delete('/account-activation/{id}', [AccountActivationController::class, 'destroy'])->middleware('check.access:DeleteSystemData');
+    Route::get('/violation-form',[InternetUserController::class,'Violationform']);
 });
