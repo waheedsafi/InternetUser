@@ -16,6 +16,7 @@ class AccountActivationController extends Controller
         $activate = DB::table('account_activations as ac')
             ->join('internet_users as intu', 'intu.id', '=', 'ac.internet_user_id')
             ->select(
+                'ac.id',
                 'intu.username',
                 'ac.reason',
                 'ac.created_at'
