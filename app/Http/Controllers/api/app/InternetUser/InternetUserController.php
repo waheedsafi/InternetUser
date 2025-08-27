@@ -441,4 +441,98 @@ class InternetUserController extends Controller
             'data' => $internetUser
         ], 200);
     }
+
+   // InternetUserController.php
+public function individualReport(Request $request)
+{
+    $username = $request->query('username');
+    $startDate = $request->query('startDate');
+    $endDate = $request->query('endDate');
+
+    // پیدا کردن کاربر اینترنتی بر اساس username
+    $internetUser = InternetUser::where('username', $username)->first();
+
+    if (!$internetUser) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+
+    $person = $internetUser->person;
+
+    if (!$person) {
+        return response()->json(['message' => 'Person data missing for this user'], 404);
+    }
+
+    // اطلاعات شخص
+    $personData = DB::table('persons as p')
+        ->leftJoin('directorates as d', 'd.id', '=', 'p.directorate_id')
+        ->leftJoin('directorates as parent', 'parent.id', '=', 'd.directorate_id')
+        ->where('p.id', $person->id)
+        ->select(
+            'p.name',
+            'p.lastname',
+            'd.name as directorate',
+            'parent.name as deputyMinistry'
+        )
+        ->first();
+
+    // تعداد کل تخلفات
+    $violationCountQuery = $internetUser->violations();
+
+    if ($startDate) {
+        $violationCountQuery->whereDate('created_at', '>=', $startDate);
+    }
+    if ($endDate) {
+        $violationCountQuery->whereDate('created_at', '<=', $endDate);
+    }
+
+    $violationCount = $violationCountQuery->count();
+
+    // روند تخلفات
+    $trendQuery = $internetUser->violations();
+
+    if ($startDate) {
+        $trendQuery->whereDate('created_at', '>=', $startDate);
+    }
+    if ($endDate) {
+        $trendQuery->whereDate('created_at', '<=', $endDate);
+    }
+
+    $trend = $trendQuery
+        ->selectRaw('DATE(created_at) as date, COUNT(*) as violations')
+        ->groupBy('date')
+        ->orderBy('date')
+        ->get();
+
+    return response()->json([
+        'data' => [
+            'name' => $personData->name ?? $person->name,
+            'lastname' => $personData->lastname ?? $person->lastname,
+            'directorate' => $personData->directorate ?? 'N/A',
+            'deputyMinistry' => $personData->deputyMinistry ?? 'N/A',
+            'violations' => $violationCount,
+            'trend' => $trend
+        ]
+    ]);
+}
+
+public function generalReport(Request $request)
+{
+    $startDate = $request->query('startDate');
+    $endDate = $request->query('endDate');
+
+    $data = DB::table('internet_users as iu')
+        ->join('persons as p', 'p.id', '=', 'iu.person_id')
+        ->join('directorates as d', 'd.id', '=', 'p.directorate_id')
+        ->leftJoin('violations as v', function($join) use ($startDate, $endDate) {
+            $join->on('v.internet_user_id', '=', 'iu.id');
+            if ($startDate) $join->whereDate('v.created_at', '>=', $startDate);
+            if ($endDate) $join->whereDate('v.created_at', '<=', $endDate);
+        })
+        ->select('d.id', 'd.name as directorate', DB::raw('COUNT(v.id) as violations'))
+        ->groupBy('d.id', 'd.name')
+         ->havingRaw('COUNT(v.id) > 0')
+        ->get();
+
+    return response()->json($data);
+}
 }

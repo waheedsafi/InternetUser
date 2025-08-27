@@ -53,4 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/account-activation/{id}', [AccountActivationController::class, 'update'])->middleware('check.access:UpdateSystemData');
     Route::delete('/account-activation/{id}', [AccountActivationController::class, 'destroy'])->middleware('check.access:DeleteSystemData');
     Route::get('/violation-form',[InternetUserController::class,'Violationform']);
+    // i added these two APIs
+    Route::get('reports/individual', [InternetUserController::class, 'individualReport']);
+    Route::get('reports/general', [InternetUserController::class, 'generalReport']);
+
 });
