@@ -433,7 +433,7 @@ class InternetUserController extends Controller
     {
         $mac = $request->input('mac_address');
 
-        $exists = \App\Models\InternetUser::where('mac_address', $mac)->exists();
+        $exists = \App\Models\InternetUserDevice::where('mac_address', $mac)->exists();
 
         return response()->json([
             'exists' => $exists,
