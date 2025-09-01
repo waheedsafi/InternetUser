@@ -73,7 +73,9 @@ class InternetUserController extends Controller
                 'directorate_id' => 'required|exists:directorates,id',
                 'email' => 'required|unique:persons,email',
                 'employee_type_id' => 'required|exists:employment_types,id',
-                'mac_address' => 'nullable|unique:internet_user_devices,mac_address',
+                //fardin added these 2 lines devicemacs and device_macs.*
+                'device_macs' => 'nullable|array',
+                'device_macs.*' => 'nullable|string',
                 'group_id' => 'required|exists:groups,id',
                 'position' => 'required|string',
                 'device_type_ids' => 'required|array',
@@ -102,12 +104,25 @@ class InternetUserController extends Controller
                 // 'mac_address' => $validated['mac_address'],
             ]);
 
+            // fardin added this block
+            // Normalize device_macs keys to integers for correct mapping by device_type_id
+            $normalizedMacs = [];
+            $macs = $validated['device_macs'] ?? [];
+            foreach ($macs as $k => $v) {
+                $normalizedMacs[(int)$k] = $v;
+            }
+            // fardin sanitize macs: trim, uppercase, empty string -> null
+            $normalizedMacsClean = [];
+            foreach ($normalizedMacs as $k => $v) {
+                $val = is_string($v) ? strtoupper(trim($v)) : null;
+                $normalizedMacsClean[(int)$k] = ($val === '' ? null : $val);
+            }
 
             foreach ($validated['device_type_ids'] as $deviceTypeId) {
                 InternetUserDevice::create([
                     'internet_user_id' => $internetUser->id,
                     'device_type_id' => $deviceTypeId,
-                    'mac_address' => $validated['mac_address'] ?? null,
+                    'mac_address' => $normalizedMacsClean[(int)$deviceTypeId] ?? null,
 
 
                 ]);
@@ -165,7 +180,8 @@ class InternetUserController extends Controller
                 'intu.id',
                 // DB::raw('GROUP_CONCAT(DISTINCT dt.name ORDER BY dt.name) as device_types'),
                 'dt.name as device_type',
-                'user.mac_address',
+                // select per-row mac as alias to build device_macs without exposing a top-level mac_address
+                'user.mac_address as device_mac',
                 'emp.name as employment_type',
                 'per.name',
                 'intu.device_limit',
@@ -179,6 +195,8 @@ class InternetUserController extends Controller
                 'gr.name as groups',
                 'val.comment',
                 'valt.name as violation_type',
+                // fardin added this line
+                'user.device_type_id',
                 DB::raw('(SELECT COUNT(*) FROM violations WHERE internet_user_id = intu.id) as violation_count'),
                 'parent_dir.name as deputy'
             )
@@ -186,21 +204,28 @@ class InternetUserController extends Controller
         ///
 
 
-        if (!$internetUser) {
+        if (!$internetUser || $internetUser->isEmpty() || !$internetUser[0]) {
             return response()->json([
                 'message' => 'Internet user not found.',
             ], 404);
         }
-
-
-        $devices = [];
-        $internetUser->map(function ($item) use (&$devices) {
-            array_push($devices, $item->device_type);
+        
+        // fardin changed: collect mac addresses per device type (include null/empty too)
+        // fardin also cast keys to string so JSON returns an object map, not a numeric array
+        $deviceMacs = [];
+        $internetUser->map(function ($item) use (&$deviceMacs) {
+            $deviceMacs[(string)$item->device_type_id] = $item->device_mac; // fardin use alias from select
         });
-
         $user = $internetUser[0];
-        $user->device_type = $devices;
+        // We now use device_macs per device type; avoid misleading single mac_address (ensure it's not present)
+        if (isset($user->mac_address)) unset($user->mac_address);
+        // or: $user->mac_address = null;
+        // fardin added this line
+        $user->device_macs = $deviceMacs;
 
+        // ADD THESE TWO LINES:
+        $user->device_type = $internetUser->pluck('device_type')->toArray();
+        $user->device_type_id = $internetUser->pluck('device_type_id')->toArray();
 
         return response()->json([
             'message' => 'Internet user found.',
@@ -228,7 +253,9 @@ class InternetUserController extends Controller
             'employee_type_id' => 'required|exists:employment_types,id',
             'position' => 'required|string',
             'device_limit' => 'required|integer',
-            'mac_address' => 'nullable|unique:internet_user_devices,mac_address,',
+            // fardin changed this line from ... to add device_macs validation
+            'device_macs' => 'nullable|array',
+            'device_macs.*' => 'nullable|string',
             'device_type_ids' => 'required|array',
             'device_type_ids.*' => 'exists:device_types,id',
             'group_id' => 'required|exists:groups,id',
@@ -255,18 +282,31 @@ class InternetUserController extends Controller
                 'username' => $validated['username'],
                 'status' => $validated['status'],
                 'device_limit' => $validated['device_limit'],
-                'mac_address' => $validated['mac_address'],
+                // fardin changed this line: removed 'mac_address' from update to fix undefined array key error
                 'group_id' => $validated['group_id'],
             ]);
 
 
             InternetUserDevice::where('internet_user_id', $internetUser->id)->delete();
 
+            // fardin normalize and sanitize device_macs before recreate
+            $macs = $validated['device_macs'] ?? [];
+            $normalizedMacs = [];
+            foreach ($macs as $k => $v) {
+                $normalizedMacs[(int)$k] = $v;
+            }
+            $normalizedMacsClean = [];
+            foreach ($normalizedMacs as $k => $v) {
+                $val = is_string($v) ? strtoupper(trim($v)) : null;
+                $normalizedMacsClean[(int)$k] = ($val === '' ? null : $val);
+            }
 
             foreach ($validated['device_type_ids'] as $deviceTypeId) {
                 InternetUserDevice::create([
                     'internet_user_id' => $internetUser->id,
                     'device_type_id' => $deviceTypeId,
+                    // fardin use sanitized map
+                    'mac_address' => $normalizedMacsClean[(int)$deviceTypeId] ?? null,
                 ]);
             }
 
@@ -393,7 +433,7 @@ class InternetUserController extends Controller
     {
         $mac = $request->input('mac_address');
 
-        $exists = \App\Models\InternetUser::where('mac_address', $mac)->exists();
+        $exists = \App\Models\InternetUserDevice::where('mac_address', $mac)->exists();
 
         return response()->json([
             'exists' => $exists,
