@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class InternetUserDevice extends Model
 {
-     protected $fillable =['internet_user_id','device_type_id'];
+     protected $fillable =['internet_user_id','device_type_id','mac_address',];
 
 ///////////////////////////////
       public function internetUser()
