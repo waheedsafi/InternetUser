@@ -73,7 +73,7 @@ class InternetUserController extends Controller
                 'directorate_id' => 'required|exists:directorates,id',
                 'email' => 'required|unique:persons,email',
                 'employee_type_id' => 'required|exists:employment_types,id',
-                'mac_address' => 'nullable|unique:internet_users,mac_address',
+                'mac_address' => 'nullable|unique:internet_user_devices,mac_address',
                 'group_id' => 'required|exists:groups,id',
                 'position' => 'required|string',
                 'device_type_ids' => 'required|array',
@@ -99,7 +99,7 @@ class InternetUserController extends Controller
                 'status' => $validated['status'],
                 'phone' => $validated['phone'],
                 'device_limit' => $request->device_limit,
-                'mac_address' => $validated['mac_address'],
+                // 'mac_address' => $validated['mac_address'],
             ]);
 
 
@@ -107,6 +107,9 @@ class InternetUserController extends Controller
                 InternetUserDevice::create([
                     'internet_user_id' => $internetUser->id,
                     'device_type_id' => $deviceTypeId,
+                    'mac_address' => $validated['mac_address'] ?? null,
+
+
                 ]);
             }
 
@@ -162,7 +165,7 @@ class InternetUserController extends Controller
                 'intu.id',
                 // DB::raw('GROUP_CONCAT(DISTINCT dt.name ORDER BY dt.name) as device_types'),
                 'dt.name as device_type',
-                'intu.mac_address',
+                'user.mac_address',
                 'emp.name as employment_type',
                 'per.name',
                 'intu.device_limit',
@@ -213,6 +216,8 @@ class InternetUserController extends Controller
     {
         $internetUser = InternetUser::findOrFail($id);
         $person = $internetUser->person;
+        // $internetUserDevice = InternetUserDevice::where('internet_user_id', $internetUser->id)->first();
+
 
         $validated = $request->validate([
             'username' => 'required|string|unique:internet_users,username,' . $internetUser->id,
@@ -223,7 +228,7 @@ class InternetUserController extends Controller
             'employee_type_id' => 'required|exists:employment_types,id',
             'position' => 'required|string',
             'device_limit' => 'required|integer',
-            'mac_address' => 'nullable|unique:internet_users,mac_address,' . $internetUser->id,
+            'mac_address' => 'nullable|unique:internet_user_devices,mac_address,',
             'device_type_ids' => 'required|array',
             'device_type_ids.*' => 'exists:device_types,id',
             'group_id' => 'required|exists:groups,id',
@@ -433,10 +438,105 @@ class InternetUserController extends Controller
                 'parent_dir.name as deputy'
             )
             ->get();
+        if (!$internetUser) {
+            return response()->json([
+                'message' => 'Violations not found.',
+            ], 404);
+        }
 
         return response()->json([
-            'message' => 'Internet user found.',
+            'message' => 'Violations not found.',
             'data' => $internetUser
         ], 200);
+    }
+
+
+    public function individualReport(Request $request)
+    {
+        $username = $request->query('username');
+        $startDate = $request->query('startDate');
+        $endDate = $request->query('endDate');
+
+        $internetUser = InternetUser::where('username', $username)->first();
+
+        if (!$internetUser) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $person = $internetUser->person;
+
+        if (!$person) {
+            return response()->json(['message' => 'Person data missing for this user'], 404);
+        }
+
+        $personData = DB::table('persons as p')
+            ->leftJoin('directorates as d', 'd.id', '=', 'p.directorate_id')
+            ->leftJoin('directorates as parent', 'parent.id', '=', 'd.directorate_id')
+            ->where('p.id', $person->id)
+            ->select(
+                'p.name',
+                'p.lastname',
+                'd.name as directorate',
+                'parent.name as deputyMinistry'
+            )
+            ->first();
+
+        $violationCountQuery = $internetUser->violations();
+
+        if ($startDate) {
+            $violationCountQuery->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $violationCountQuery->whereDate('created_at', '<=', $endDate);
+        }
+
+        $violationCount = $violationCountQuery->count();
+
+        $trendQuery = $internetUser->violations();
+
+        if ($startDate) {
+            $trendQuery->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $trendQuery->whereDate('created_at', '<=', $endDate);
+        }
+
+        $trend = $trendQuery
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as violations')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        return response()->json([
+            'data' => [
+                'name' => $personData->name ?? $person->name,
+                'lastname' => $personData->lastname ?? $person->lastname,
+                'directorate' => $personData->directorate ?? 'N/A',
+                'deputyMinistry' => $personData->deputyMinistry ?? 'N/A',
+                'violations' => $violationCount,
+                'trend' => $trend
+            ]
+        ]);
+    }
+
+    public function generalReport(Request $request)
+    {
+        $startDate = $request->query('startDate');
+        $endDate = $request->query('endDate');
+
+        $data = DB::table('internet_users as iu')
+            ->join('persons as p', 'p.id', '=', 'iu.person_id')
+            ->join('directorates as d', 'd.id', '=', 'p.directorate_id')
+            ->leftJoin('violations as v', function ($join) use ($startDate, $endDate) {
+                $join->on('v.internet_user_id', '=', 'iu.id');
+                if ($startDate) $join->whereDate('v.created_at', '>=', $startDate);
+                if ($endDate) $join->whereDate('v.created_at', '<=', $endDate);
+            })
+            ->select('d.id', 'd.name as directorate', DB::raw('COUNT(v.id) as violations'))
+            ->groupBy('d.id', 'd.name')
+            ->havingRaw('COUNT(v.id) > 0')
+            ->get();
+
+        return response()->json($data);
     }
 }

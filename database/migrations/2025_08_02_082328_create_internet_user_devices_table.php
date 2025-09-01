@@ -13,6 +13,7 @@ return new class extends Migration
         Schema::create('internet_user_devices', function (Blueprint $table) {
             $table->unsignedBigInteger('internet_user_id');
             $table->unsignedBigInteger('device_type_id');
+             $table->string('mac_address')->nullable();
             $table->timestamps();
             $table->foreign('internet_user_id')->references('id')->on('internet_users')->onDelete('cascade');
             $table->foreign('device_type_id')->references('id')->on('device_types')->onDelete('cascade');
