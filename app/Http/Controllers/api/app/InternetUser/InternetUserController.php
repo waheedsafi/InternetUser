@@ -209,7 +209,7 @@ class InternetUserController extends Controller
                 'message' => 'Internet user not found.',
             ], 404);
         }
-        
+
         // fardin changed: collect mac addresses per device type (include null/empty too)
         // fardin also cast keys to string so JSON returns an object map, not a numeric array
         $deviceMacs = [];
