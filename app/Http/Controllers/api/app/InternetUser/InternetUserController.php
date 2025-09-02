@@ -66,6 +66,7 @@ class InternetUserController extends Controller
         DB::beginTransaction();
 
         try {
+            //ibrahimi-it changed this: accept devices[] payload in addition to legacy fields
             $validated = $request->validate([
                 'username' => 'required|string|unique:internet_users,username',
                 'status' => 'required|in:0,1',
@@ -73,12 +74,16 @@ class InternetUserController extends Controller
                 'directorate_id' => 'required|exists:directorates,id',
                 'email' => 'required|unique:persons,email',
                 'employee_type_id' => 'required|exists:employment_types,id',
-                //fardin added these 2 lines devicemacs and device_macs.*
+                // Legacy map
                 'device_macs' => 'nullable|array',
                 'device_macs.*' => 'nullable|string',
+                //ibrahimi-it changed this: new per-device payload (either this OR device_type_ids[])
+                'devices' => 'nullable|array',
+                'devices.*.device_type_id' => 'required_with:devices|exists:device_types,id',
+                'devices.*.mac_address' => 'nullable|string',
                 'group_id' => 'required|exists:groups,id',
                 'position' => 'required|string',
-                'device_type_ids' => 'required|array',
+                'device_type_ids' => 'required_without:devices|array',
                 'device_type_ids.*' => 'exists:device_types,id',
             ]);
 
@@ -104,28 +109,39 @@ class InternetUserController extends Controller
                 // 'mac_address' => $validated['mac_address'],
             ]);
 
-            // fardin added this block
-            // Normalize device_macs keys to integers for correct mapping by device_type_id
-            $normalizedMacs = [];
-            $macs = $validated['device_macs'] ?? [];
-            foreach ($macs as $k => $v) {
-                $normalizedMacs[(int)$k] = $v;
-            }
-            // fardin sanitize macs: trim, uppercase, empty string -> null
-            $normalizedMacsClean = [];
-            foreach ($normalizedMacs as $k => $v) {
-                $val = is_string($v) ? strtoupper(trim($v)) : null;
-                $normalizedMacsClean[(int)$k] = ($val === '' ? null : $val);
-            }
-/////////////////////////////////////////
-            foreach ($validated['device_type_ids'] as $deviceTypeId) {
-                InternetUserDevice::create([
-                    'internet_user_id' => $internetUser->id,
-                    'device_type_id' => $deviceTypeId,
-                    'mac_address' => $normalizedMacsClean[(int)$deviceTypeId] ?? null,
-
-
-                ]);
+            //ibrahimi-it changed this: prefer explicit devices[] if present; fallback to legacy mapping
+            $devicesPayload = $validated['devices'] ?? null;
+            if (is_array($devicesPayload) && count($devicesPayload) > 0) {
+                foreach ($devicesPayload as $dev) {
+                    $mac = $dev['mac_address'] ?? null;
+                    $mac = is_string($mac) ? strtoupper(trim($mac)) : null;
+                    $mac = ($mac === '' ? null : $mac);
+                    InternetUserDevice::create([
+                        'internet_user_id' => $internetUser->id,
+                        'device_type_id' => (int)$dev['device_type_id'],
+                        'mac_address' => $mac,
+                    ]);
+                }
+            } else {
+                // Normalize device_macs keys to integers for correct mapping by device_type_id
+                $normalizedMacs = [];
+                $macs = $validated['device_macs'] ?? [];
+                foreach ($macs as $k => $v) {
+                    $normalizedMacs[(int)$k] = $v;
+                }
+                // sanitize macs: trim, uppercase, empty string -> null
+                $normalizedMacsClean = [];
+                foreach ($normalizedMacs as $k => $v) {
+                    $val = is_string($v) ? strtoupper(trim($v)) : null;
+                    $normalizedMacsClean[(int)$k] = ($val === '' ? null : $val);
+                }
+                foreach ($validated['device_type_ids'] as $deviceTypeId) {
+                    InternetUserDevice::create([
+                        'internet_user_id' => $internetUser->id,
+                        'device_type_id' => $deviceTypeId,
+                        'mac_address' => $normalizedMacsClean[(int)$deviceTypeId] ?? null,
+                    ]);
+                }
             }
 
             DB::commit();
@@ -227,6 +243,16 @@ class InternetUserController extends Controller
         $user->device_type = $internetUser->pluck('device_type')->toArray();
         $user->device_type_id = $internetUser->pluck('device_type_id')->toArray();
 
+        //ibrahimi-it changed this: also return a per-row devices[] list for multiple same-type devices
+        $devices = [];
+        foreach ($internetUser as $row) {
+            $devices[] = [
+                'device_type_id' => (int)$row->device_type_id,
+                'mac_address' => $row->device_mac,
+            ];
+        }
+        $user->devices = $devices;
+
         return response()->json([
             'message' => 'Internet user found.',
             'data' => $user,
@@ -244,6 +270,7 @@ class InternetUserController extends Controller
         // $internetUserDevice = InternetUserDevice::where('internet_user_id', $internetUser->id)->first();
 
 
+        //ibrahimi-it changed this: accept devices[] payload in addition to legacy fields
         $validated = $request->validate([
             'username' => 'required|string|unique:internet_users,username,' . $internetUser->id,
             'status' => 'required|in:0,1',
@@ -256,11 +283,15 @@ class InternetUserController extends Controller
             // fardin changed this line from ... to add device_macs validation
             'device_macs' => 'nullable|array',
             'device_macs.*' => 'nullable|string',
-            'device_type_ids' => 'required|array',
+            'device_type_ids' => 'required_without:devices|array',
             'device_type_ids.*' => 'exists:device_types,id',
             'group_id' => 'required|exists:groups,id',
             'name' => 'required|string',
             'lastname' => 'required|string',
+            //ibrahimi-it changed this: new per-device payload
+            'devices' => 'nullable|array',
+            'devices.*.device_type_id' => 'required_with:devices|exists:device_types,id',
+            'devices.*.mac_address' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -289,25 +320,39 @@ class InternetUserController extends Controller
 
             InternetUserDevice::where('internet_user_id', $internetUser->id)->delete();
 
-            // fardin normalize and sanitize device_macs before recreate
-            $macs = $validated['device_macs'] ?? [];
-            $normalizedMacs = [];
-            foreach ($macs as $k => $v) {
-                $normalizedMacs[(int)$k] = $v;
-            }
-            $normalizedMacsClean = [];
-            foreach ($normalizedMacs as $k => $v) {
-                $val = is_string($v) ? strtoupper(trim($v)) : null;
-                $normalizedMacsClean[(int)$k] = ($val === '' ? null : $val);
-            }
-
-            foreach ($validated['device_type_ids'] as $deviceTypeId) {
-                InternetUserDevice::create([
-                    'internet_user_id' => $internetUser->id,
-                    'device_type_id' => $deviceTypeId,
-                    // fardin use sanitized map
-                    'mac_address' => $normalizedMacsClean[(int)$deviceTypeId] ?? null,
-                ]);
+            //ibrahimi-it changed this: prefer devices[] if provided; else fallback to legacy map
+            $devicesPayload = $validated['devices'] ?? null;
+            if (is_array($devicesPayload) && count($devicesPayload) > 0) {
+                foreach ($devicesPayload as $dev) {
+                    $mac = $dev['mac_address'] ?? null;
+                    $mac = is_string($mac) ? strtoupper(trim($mac)) : null;
+                    $mac = ($mac === '' ? null : $mac);
+                    InternetUserDevice::create([
+                        'internet_user_id' => $internetUser->id,
+                        'device_type_id' => (int)$dev['device_type_id'],
+                        'mac_address' => $mac,
+                    ]);
+                }
+            } else {
+                // normalize and sanitize device_macs before recreate
+                $macs = $validated['device_macs'] ?? [];
+                $normalizedMacs = [];
+                foreach ($macs as $k => $v) {
+                    $normalizedMacs[(int)$k] = $v;
+                }
+                $normalizedMacsClean = [];
+                foreach ($normalizedMacs as $k => $v) {
+                    $val = is_string($v) ? strtoupper(trim($v)) : null;
+                    $normalizedMacsClean[(int)$k] = ($val === '' ? null : $val);
+                }
+                foreach ($validated['device_type_ids'] as $deviceTypeId) {
+                    InternetUserDevice::create([
+                        'internet_user_id' => $internetUser->id,
+                        'device_type_id' => $deviceTypeId,
+                        // fardin use sanitized map
+                        'mac_address' => $normalizedMacsClean[(int)$deviceTypeId] ?? null,
+                    ]);
+                }
             }
 
             DB::commit();
