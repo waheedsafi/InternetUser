@@ -117,7 +117,7 @@ class InternetUserController extends Controller
                 $val = is_string($v) ? strtoupper(trim($v)) : null;
                 $normalizedMacsClean[(int)$k] = ($val === '' ? null : $val);
             }
-
+/////////////////////////////////////////
             foreach ($validated['device_type_ids'] as $deviceTypeId) {
                 InternetUserDevice::create([
                     'internet_user_id' => $internetUser->id,
