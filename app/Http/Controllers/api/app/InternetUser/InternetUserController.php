@@ -41,8 +41,7 @@ class InternetUserController extends Controller
                 'intu.id',
 
             )
-
-
+            
             ->get();
 
         return response()->json($data);
