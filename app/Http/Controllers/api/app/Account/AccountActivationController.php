@@ -7,6 +7,7 @@ use App\Models\AccountActivation;
 use App\Models\InternetUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class AccountActivationController extends Controller
 {
@@ -15,11 +16,13 @@ class AccountActivationController extends Controller
     {
         $activate = DB::table('account_activations as ac')
             ->join('internet_users as intu', 'intu.id', '=', 'ac.internet_user_id')
+            ->leftJoin('users as u', 'u.id', '=', 'ac.activated_by_user_id')
             ->select(
                 'ac.id',
                 'intu.username',
                 'ac.reason',
-                'ac.created_at'
+                'ac.created_at',
+                DB::raw('COALESCE(u.name, "") as activated_by')
             )
             ->get();
 
@@ -42,6 +45,7 @@ class AccountActivationController extends Controller
         AccountActivation::create([
             'internet_user_id' => $user->id,
             'reason' => $request->reason,
+            'activated_by_user_id' => optional($request->user())->id ?? Auth::id(),
 
         ]);
         return response()->json(['message' => 'Account activated successfully']);
@@ -80,12 +84,14 @@ class AccountActivationController extends Controller
     {
         $activation = DB::table('account_activations as ac')
             ->join('internet_users as iu', 'iu.id', '=', 'ac.internet_user_id')
+            ->leftJoin('users as u', 'u.id', '=', 'ac.activated_by_user_id')
             ->select(
                 'ac.id',
                 'ac.internet_user_id',
                 'iu.username',
                 'ac.reason',
-                'ac.created_at'
+                'ac.created_at',
+                DB::raw('COALESCE(u.name, "") as activated_by')
             )
             ->where('ac.id', $id)
             ->first();
