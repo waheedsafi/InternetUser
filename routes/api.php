@@ -55,4 +55,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/violation-form', [InternetUserController::class, 'Violationform']);
     Route::get('reports/individual', [InternetUserController::class, 'individualReport']);
     Route::get('reports/general', [InternetUserController::class, 'generalReport']);
+    Route::get('/getSpecifiedUserForViolation',[ViolationController::class,'getSpecifiedUserForViolation']);
 });
