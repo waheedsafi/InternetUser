@@ -42,7 +42,7 @@ class InternetUserController extends Controller
 
             )
             
-            ->get();
+            ->paginate(10);
 
         return response()->json($data);
     }
@@ -181,16 +181,7 @@ class InternetUserController extends Controller
             ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')
             ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
             ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
-            ->leftJoin('violations as val', function ($join) {
-                $join->on('val.internet_user_id', '=', 'intu.id')
-                    ->whereRaw('val.id = (
-                    SELECT MAX(v2.id) 
-                    FROM violations v2 
-                    WHERE v2.internet_user_id = intu.id
-                )');
-            })
-            ->leftJoin('violations_types as valt', 'val.violation_type_id', '=', 'valt.id')
-            ->where('intu.id', '=', $id)
+            
             ->select(
                 'intu.id',
                 // DB::raw('GROUP_CONCAT(DISTINCT dt.name ORDER BY dt.name) as device_types'),
@@ -205,14 +196,9 @@ class InternetUserController extends Controller
                 'intu.username',
                 'per.phone',
                 'dir.name as directorate',
-                'intu.status',
                 'per.position',
                 'gr.name as groups',
-                'val.comment',
-                'valt.name as violation_type',
-                // fardin added this line
                 'user.device_type_id',
-                DB::raw('(SELECT COUNT(*) FROM violations WHERE internet_user_id = intu.id) as violation_count'),
                 'parent_dir.name as deputy'
             )
             ->get();
