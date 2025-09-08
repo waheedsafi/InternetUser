@@ -81,14 +81,19 @@ class ViolationController extends Controller
     }
 }
 
-public function getSpecifiedUserForViolation() {
-    $userViolations = DB::table('violations as v')
-        ->join('internet_users as intu', 'intu.id', '=', 'v.internet_user_id')
-        ->select('intu.id', 'intu.username', 'v.id')
+public function getSpecifiedUserForViolation(Request $request) {
+    $search = trim((string) $request->query('search', ''));
+
+    if ($search === '') {
+        return response()->json([], 200);
+    }
+    $users = DB::table('internet_users')
+        ->select('id', 'username')
+        ->where('username', 'like', '%' . $search . '%')
+        ->orderBy('username')
         ->get();
 
-    return response()->json([
-        'user_violations' => $userViolations
-    ]);
+    return response()->json($users, 200);
 }
+
 }
