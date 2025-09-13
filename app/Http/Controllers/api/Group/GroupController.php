@@ -12,4 +12,20 @@ class GroupController extends Controller
         $group = DB::table('groups')->select('id','name')->get();
         return response()->json($group);
     }
+
+   public function countsByType()
+{
+    $rows = DB::table('internet_users as iu')
+        ->join('groups as g', 'g.id', '=', 'iu.group_id')
+        ->select(
+            'g.name as group_type',
+            DB::raw('COUNT(*) as total')
+        )
+        ->groupBy('g.name')
+        ->orderByDesc('total')
+        ->get();
+
+    return response()->json($rows, 200);
+}
+
 }

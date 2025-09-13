@@ -23,4 +23,14 @@ class InternetUser extends Model
     {
         return $this->hasMany(Violation::class);
     }
+    public function accountActivations()
+    {
+        return $this->hasMany(AccountActivation::class);
+    }
+
+    public function deviceTypes()
+{
+    return $this->belongsToMany(DeviceType::class, 'internet_user_devices', 'internet_user_id', 'device_type_id')->withTimestamps();
+}
+
 }

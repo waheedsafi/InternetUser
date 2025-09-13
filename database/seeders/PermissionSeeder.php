@@ -19,41 +19,62 @@ class PermissionSeeder extends Seeder
         //
         permission::create([
             'id' =>PermissionEnum::CreateUsers->value,
-            'name' => 'Create User',
+            'name' => 'CreateUsers',
         ]);
         permission::create([
             'id' =>PermissionEnum::UpdateUsers->value,
-            'name' => 'Create User',
+            'name' => 'UpdateUsers',
         ]);
         permission::create([
             'id' =>PermissionEnum::DeleteUsers->value,
-            'name' => 'Create User',
+            'name' => 'DeleteUsers',
         ]);
         permission::create([
             'id' =>PermissionEnum::ViewUsers->value,
-            'name' => 'Create User',
+            'name' => 'ViewUsers',
         ]);
         permission::create([
             'id' =>PermissionEnum::ViewSystemData->value,
-            'name' => 'Create User',
+            'name' => 'ViewSystemData',
         ]);
         permission::create([
             'id' =>PermissionEnum::AddSystemData->value,
-            'name' => 'Create User',
+            'name' => 'AddSystemData',
         ]);
         permission::create([
             'id' =>PermissionEnum::UpdateSystemData->value,
-            'name' => 'Create User',
+            'name' => 'UpdateSystemData',
         ]);
         permission::create([
             'id' =>PermissionEnum::DeleteSystemData->value,
-            'name' => 'Create User',
+            'name' => 'DeleteSystemData',
         ]);
 
         $this->adminPermission();
         $this->userPermission();
+        $this->viewerPermission();
     }
 
+    // viewer permission
+     private function viewerPermission(){
+        RolePermission::create([
+            'role_id'=>RoleEnum::viewer->value,
+            'permission_id'=>PermissionEnum::ViewSystemData->value,
+            
+        ]);
+        RolePermission::create([
+            'role_id'=>RoleEnum::viewer->value,
+            'permission_id'=>PermissionEnum::ViewUsers->value,
+            
+        ]);
+        RolePermission::create([
+            'role_id'=>RoleEnum::viewer->value,
+            'permission_id'=>PermissionEnum::UpdateUsers->value,
+            
+        ]);
+     }
+     
+     // admin permission
     private function adminPermission(){
 
         RolePermission::create([
@@ -74,8 +95,22 @@ class PermissionSeeder extends Seeder
             'role_id' =>RoleEnum::Admin->value,
             'permission_id' =>PermissionEnum::ViewUsers->value,
         ]);
+         RolePermission::create([
+            'role_id' =>RoleEnum::Admin->value,
+            'permission_id' =>PermissionEnum::AddSystemData->value,
+        ]);
+          RolePermission::create([
+            'role_id' =>RoleEnum::Admin->value,
+            'permission_id' =>PermissionEnum::UpdateSystemData->value,
+        ]);
+        RolePermission::create([
+            'role_id' =>RoleEnum::Admin->value,
+            'permission_id' =>PermissionEnum::DeleteSystemData->value,
+        ]);
+       
       
     }
+    // user permission
     private function userPermission(){
 
         RolePermission::create([
@@ -86,6 +121,27 @@ class PermissionSeeder extends Seeder
             'role_id' =>RoleEnum::User->value,
             'permission_id' =>PermissionEnum::ViewSystemData->value,
         ]);
+        RolePermission::create([
+            'role_id'=>RoleEnum::User->value,
+            'permission_id' =>PermissionEnum::UpdateUsers->value,
+            
+        ]);
+         RolePermission::create([
+            'role_id'=>RoleEnum::User->value,
+            'permission_id' =>PermissionEnum::AddSystemData->value,
+            
+        ]);
+          RolePermission::create([
+            'role_id'=>RoleEnum::User->value,
+            'permission_id' =>PermissionEnum::UpdateSystemData->value,
+            
+        ]);
+         RolePermission::create([
+            'role_id'=>RoleEnum::User->value,
+            'permission_id' =>PermissionEnum::DeleteSystemData->value,
+            
+        ]);
      
     }
+    
 }
