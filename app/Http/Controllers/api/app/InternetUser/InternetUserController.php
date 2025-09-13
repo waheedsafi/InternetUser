@@ -186,7 +186,7 @@ class InternetUserController extends Controller
                 'intu.id',
                 // DB::raw('GROUP_CONCAT(DISTINCT dt.name ORDER BY dt.name) as device_types'),
                 'dt.name as device_type',
-                // select per-row mac as alias to build device_macs without exposing a top-level mac_address
+                // select per-row mac as alias tooo build device_macs without exposing a top-level mac_address
                 'user.mac_address as device_mac',
                 'emp.name as employment_type',
                 'per.name',
