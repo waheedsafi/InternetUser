@@ -29,16 +29,24 @@ class DatabaseSeeder extends Seeder
     {
 
         DeviceType::create([
-            'id' => DeviceTypeEnum::Mobile->value,
-            'name' => 'Mobile'
+            'id' => DeviceTypeEnum::Desktop->value,
+            'name' => 'Desktop'
         ]);
         DeviceType::create([
-            'id' => DeviceTypeEnum::Computer->value,
-            'name' => 'Computer '
+            'id' => DeviceTypeEnum::Laptop->value,
+            'name' => 'Laptop '
         ]);
         DeviceType::create([
             'id' => DeviceTypeEnum::Tablet->value,
             'name' => 'Tablet'
+        ]);
+        DeviceType::create([
+            'id'=>DeviceTypeEnum::Mobile->value,
+            'name'=>'Mobile'
+        ]);
+        DeviceType::create([
+            'id'=>DeviceTypeEnum::AllInOne->value,
+            'name'=>'All In One'
         ]);
 
         Group::create([
@@ -97,6 +105,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => RoleEnum::Admin->value,
                 'password' => Hash::make('adminpassword'),
             ]);
+           
         }
         $this->call(DirectorateSeeder::class);
         $this->call(PermissionSeeder::class);

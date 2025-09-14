@@ -1,9 +1,12 @@
 <?php
+
 namespace App\Enum;
 
 enum DeviceTypeEnum: int
 {
-    case Mobile = 1;
-    case Computer = 2;
+    case Desktop = 1;
+    case Laptop = 2;
     case Tablet = 3;
+    case Mobile = 4;
+    case AllInOne =5;
 }

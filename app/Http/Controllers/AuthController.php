@@ -11,14 +11,12 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller
 {
 
-    public function index()
-    {
-        $data = DB::table('users as us')
-            ->join('roles as ro', 'us.role_id', '=', 'ro.id')
-            ->select('us.id', 'us.name', 'us.email', 'ro.name as role_name')
-            ->get();
-
-        return response()->json($data);
+    public function index(){
+       $data = DB::table('users as us')
+              ->join('roles as ro', 'us.role_id', '=', 'ro.id')  
+              ->select('us.id', 'us.name', 'us.email', 'ro.name as role_name') 
+              ->get();
+               return response()->json($data);
     }
 
     public function login(Request $request)
@@ -45,6 +43,8 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('YourAppName')->plainTextToken;
+
+        
         $user->load('role');
 
         return response()->json([
@@ -60,47 +60,31 @@ class AuthController extends Controller
         ]);
     }
 
-   public function profile(Request $request)
-{
-    $user = auth()->user();
+    public function profile()
+    {
+        $user = auth()->user();
 
-    // بررسی اینکه آیا کاربر در حال تلاش برای مشاهده پروفایل خودش است یا نه
-    if ($request->route('id') != $user->id) {
+        
+        $user->load('role');
+
         return response()->json([
-            'success' => false,
-            'message' => 'You can only view your own profile.',
-        ], 403);
+            'success' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role ? [
+                    'id' => $user->role->id,
+                    'name' => $user->role->name,
+                ] : null,
+            ],
+        ]);
     }
 
-    $user->load('role');
-
-    return response()->json([
-        'success' => true,
-        'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role ? [
-                'id' => $user->role->id,
-                'name' => $user->role->name,
-            ] : null,
-        ],
-    ]);
-}
-
-  public function updateProfile(Request $request)
+   public function updateProfile(Request $request)
 {
-    $user = auth()->user();
+    $user = auth()->user(); 
 
-    // بررسی اینکه آیا کاربر در حال تلاش برای به‌روزرسانی پروفایل خودش است یا نه
-    if ($request->route('id') != $user->id) {
-        return response()->json([
-            'success' => false,
-            'message' => 'You can only update your own profile.',
-        ], 403);
-    }
-
-    // ادامه کدهای موجود برای به‌روزرسانی پروفایل
     $validator = Validator::make($request->all(), [
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email,' . $user->id,
@@ -113,7 +97,6 @@ class AuthController extends Controller
             'errors' => $validator->errors(),
         ], 400);
     }
-
     $user->name = $request->name;
     $user->email = $request->email;
 
@@ -131,22 +114,30 @@ class AuthController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'role' => $user->role ? [
+            'role' => [
                 'id' => $user->role->id,
                 'name' => $user->role->name,
-            ] : null,
+            ],
         ],
     ]);
 }
 
+
+
     public function register(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || $user->role?->name !== 'Admin') {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unauthorized',
+            ], 403);
+        }
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
-            'role_id' => 'required|in:1,2,3',
         ]);
 
         if ($validator->fails()) {
@@ -156,21 +147,17 @@ class AuthController extends Controller
             ], 400);
         }
 
-
         $roleId = $request->input('role_id');
-
-
         $newUser = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role_id' => $roleId,
+            'role_id' => $roleId, 
         ]);
 
-
         $token = $newUser->createToken('YourAppName')->plainTextToken;
-        $newUser->load('role');
 
+        $newUser->load('role');
 
         return response()->json([
             'success' => true,
@@ -188,8 +175,6 @@ class AuthController extends Controller
         ]);
     }
 
-
-
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -198,54 +183,60 @@ class AuthController extends Controller
             'message' => 'Logged out successfully.'
         ]);
     }
-
+    
+    // chech email to see if it exists in db
     public function checkEmail(Request $request)
-    {
-        $email = $request->input('email');
-        $exists = \App\Models\User::where('email', $email)->exists();
+{
+    $email = $request->input('email');
 
-        return response()->json([
-            'exists' => $exists
-        ]);
+    $exists = \App\Models\User::where('email', $email)->exists();
+
+    return response()->json([
+        'exists' => $exists
+    ]);
+}
+
+public function systemUsersUpdate(Request $request, $id)
+{
+    $user = User::findOrFail($id);
+
+    $validatedData = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email,' . $user->id,
+        'role_id' => 'required|integer',
+        'password' => 'nullable|min:6',
+    ]);
+
+    $user->name = $validatedData['name'];
+    $user->email = $validatedData['email'];
+    $user->role_id = $validatedData['role_id'];
+
+    if (!empty($validatedData['password'])) {
+        $user->password = Hash::make($validatedData['password']);
     }
 
-    public function systemUsersUpdate(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
+    $user->save();
 
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'role_id' => 'required|integer',
-            'password' => 'nullable|min:6',
-        ]);
+    $user->load('role');
 
-        $user->name = $validatedData['name'];
-        $user->email = $validatedData['email'];
-        $user->role_id = $validatedData['role_id'];
+    return response()->json([
+        'success' => true,
+        'user' => $user,
+        'message' => 'User updated successfully',
+    ]);
+}
 
-        if (!empty($validatedData['password'])) {
-            $user->password = Hash::make($validatedData['password']);
-        }
+public function systemUsersDelete($id)
+{
+    $user = User::findOrFail($id);
+    $user->delete();
 
-        $user->save();
-        $user->load('role');
+    return response()->json([
+        'success' => true,
+        'message' => 'User deleted successfully',
+    ]);
+}
 
-        return response()->json([
-            'success' => true,
-            'user' => $user,
-            'message' => 'User updated successfully',
-        ]);
-    }
 
-    public function systemUsersDelete($id)
-    {
-        $user = User::findOrFail($id);
-        $user->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User deleted successfully',
-        ]);
-    }
 }

@@ -38,11 +38,11 @@ class ViolationController extends Controller
    
     $violationCount = Violation::where('internet_user_id', $validated['internet_user_id'])->count();
 
-    if ($violationCount >= 2) {
-        return response()->json([
-            'message' => 'This user has already violated twice and cannot have a new violation.',
-        ], 403);
-    }
+    // if ($violationCount >= 2) {
+    //     return response()->json([
+    //         'message' => 'This user has already violated twice and cannot have a new violation.',
+    //     ], 403);
+    // }
 
     
     DB::beginTransaction();
@@ -80,4 +80,20 @@ class ViolationController extends Controller
         ], 500);
     }
 }
+
+public function getSpecifiedUserForViolation(Request $request) {
+    $search = trim((string) $request->query('search', ''));
+
+    if ($search === '') {
+        return response()->json([], 200);
+    }
+    $users = DB::table('internet_users')
+        ->select('id', 'username')
+        ->where('username', 'like', '%' . $search . '%')
+        ->orderBy('username')
+        ->get();
+
+    return response()->json($users, 200);
+}
+
 }

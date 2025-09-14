@@ -20,7 +20,6 @@ return new class extends Migration
           ->onDelete('no action')->onUpdate('cascade');
            $table->string('username')->unique();
            $table->integer('device_limit');
-           $table->string('mac_address')->nullable();
            $table->boolean('status')->default(true);
            $table->timestamps();
         });
