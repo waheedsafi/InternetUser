@@ -41,7 +41,7 @@ class InternetUserController extends Controller
                 'intu.id',
 
             )
-            
+
             ->paginate(10);
 
         return response()->json($data);
@@ -67,11 +67,28 @@ class InternetUserController extends Controller
         try {
             //ibrahimi-it changed this: accept devices[] payload in addition to legacy fields
             $validated = $request->validate([
-                'username' => 'required|string|unique:internet_users,username',
+                'username' =>
+                'required',
+                'string',
+                'unique:internet_users,username',
+                'max:20',
+
+
+                'name' =>
+                'required',
+                'string',
+
+                'max:20',
+
+
                 'status' => 'required|in:0,1',
                 'phone' => 'required|string|max:15|unique:persons,phone',
                 'directorate_id' => 'required|exists:directorates,id',
-                'email' => 'required|unique:persons,email',
+                'email' =>
+                'required',
+                'unique:persons,email',
+
+
                 'employee_type_id' => 'required|exists:employment_types,id',
                 // Legacy map
                 'device_macs' => 'nullable|array',
@@ -81,7 +98,7 @@ class InternetUserController extends Controller
                 'devices.*.device_type_id' => 'required_with:devices|exists:device_types,id',
                 'devices.*.mac_address' => 'nullable|string',
                 'group_id' => 'required|exists:groups,id',
-                'position' => 'required|string',
+                'position' => 'required|string','max:20',
                 'device_type_ids' => 'required_without:devices|array',
                 'device_type_ids.*' => 'exists:device_types,id',
             ]);
@@ -181,7 +198,7 @@ class InternetUserController extends Controller
             ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')
             ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
             ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
-            
+
             ->select(
                 'intu.id',
                 // DB::raw('GROUP_CONCAT(DISTINCT dt.name ORDER BY dt.name) as device_types'),
