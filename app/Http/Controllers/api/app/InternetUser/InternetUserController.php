@@ -198,6 +198,7 @@ class InternetUserController extends Controller
             ->join('device_types as dt', 'user.device_type_id', '=', 'dt.id')
             ->join('groups as gr', 'gr.id', '=', 'intu.group_id')
             ->leftJoin('directorates as parent_dir', 'parent_dir.id', '=', 'dir.directorate_id')
+            ->where('intu.id',$id)
 
             ->select(
                 'intu.id',
