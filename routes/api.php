@@ -10,7 +10,7 @@ use App\Http\Controllers\api\app\Device_type\DeviceTypeController;
 use App\Http\Controllers\api\app\Violation\ViolationTypeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\app\Violation\ViolationController;
-use App\Http\Controllers\Api\Group\GroupController;
+use App\Http\Controllers\api\Group\GroupController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -55,5 +55,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/violation-form', [InternetUserController::class, 'Violationform']);
     Route::get('reports/individual', [InternetUserController::class, 'individualReport']);
     Route::get('reports/general', [InternetUserController::class, 'generalReport']);
-    Route::get('/getSpecifiedUserForViolation',[ViolationController::class,'getSpecifiedUserForViolation']);
+    Route::get('/getSpecifiedUserForViolation', [ViolationController::class, 'getSpecifiedUserForViolation']);
 });
