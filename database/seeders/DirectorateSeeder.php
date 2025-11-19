@@ -59,6 +59,7 @@ $directorates = [
     ['name' => 'Department of Environmental Health', 'directorate_id' => DeputyMinistryEnum::ServiceProviding->value],
     ['name' => 'Directorate of Health Coordination Abroad', 'directorate_id' => DeputyMinistryEnum::DeputyMinistry->value],
     ['name' => 'Overseas Coordination Directorate', 'directorate_id' => DeputyMinistryEnum::DeputyMinistry->value],
+    ['name' => 'Information Technology Directorate', 'directorate_id' => DeputyMinistryEnum::AdministrativeAndFinancial->value],
 ];
 
 foreach ($directorates as $item) {
